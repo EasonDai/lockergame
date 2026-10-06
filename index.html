@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#f4ead8" />
 <title>奶奶的柜子 · 3D 解谜小游戏</title>
 <style>
   :root {
@@ -23,7 +25,8 @@
     background: radial-gradient(ellipse at 50% 40%, #fdf6ea 0%, #f4ead8 55%, #ebdcc3 100%);
   }
   canvas { position: fixed; inset: 0; display: block; outline: none; z-index: 1; touch-action: none; }
-  button { font: inherit; color: var(--ink); }
+  button { font: inherit; color: var(--ink); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  html, body { overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 
   /* 背景装饰 */
   .deco { position: fixed; pointer-events: none; z-index: 0; border-radius: 50%; }
@@ -152,6 +155,9 @@
   .bars i { width: 9px; border: 2px solid var(--ink); border-radius: 3px; background: #fff; transition: background .15s; }
   .bars i.on { background: #81b29a; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 28px; cursor: pointer; }
+  .tune-row { display: flex; gap: 8px; align-items: center; }
+  .tune-row input { flex: 1; }
+  .btn.small { padding: 4px 10px; min-width: 0; }
   .scale { display: flex; justify-content: space-between; font-size: 11px; opacity: .6; margin-top: -2px; }
   .broadcast { min-height: 48px; margin-top: 12px; font-size: 14px; line-height: 1.7; font-weight: 700; }
   .notes { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
@@ -177,23 +183,71 @@
     background: var(--bg); transition: opacity .5s; }
   #loading.hide { opacity: 0; pointer-events: none; }
 
+  /* ---------- 手机竖屏 ---------- */
   @media (max-width: 640px) {
-    .title { left: 16px; top: 16px; }
-    .title h1 { font-size: 22px; letter-spacing: 2px; }
-    .title h1 span { font-size: 14px; padding: 0 7px; }
+    .title { left: 14px; top: calc(12px + env(safe-area-inset-top)); }
+    .title h1 { font-size: 21px; letter-spacing: 2px; }
+    .title h1 span { font-size: 13px; padding: 0 7px; }
     .title p { display: none; }
-    .hud { right: 12px; top: 14px; gap: 8px; }
-    .hudrow { flex-direction: column-reverse; align-items: flex-end; gap: 8px; }
-    .progress { padding: 4px 8px; }
-    .progress span { font-size: 15px; }
-    .toolbar { gap: 6px; }
-    .btn { padding: 6px 10px; font-size: 13px; }
+    .hud { left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); gap: 8px; }
+    .hudrow { display: contents; }
+    .hud { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: ". shards time" "prog prog prog" "tools tools tools"; align-items: center; }
+    #shards { grid-area: shards; }
+    .hudrow .timer:last-child { grid-area: time; }
+    .progress { grid-area: prog; justify-self: center; padding: 3px 10px; gap: 3px; box-shadow: 2px 2px 0 var(--ink); }
+    .progress span { font-size: 14px; }
+    .timer { padding: 4px 10px; font-size: 13px; box-shadow: 2px 2px 0 var(--ink); }
+    .toolbar { grid-area: tools; justify-self: center; gap: 8px; }
+    .toolbar .btn { width: 42px; height: 42px; padding: 0; font-size: 17px; display: grid; place-items: center; box-shadow: 2px 2px 0 var(--ink); }
+    .btn { padding: 7px 12px; font-size: 13px; }
     .toolbar .t { display: none; }
-    #card { left: 50%; bottom: 100px; width: calc(100vw - 32px); transform: translate(-50%, 16px); }
+    #card { left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); width: calc(100vw - 24px); padding: 10px 14px 12px;
+      transform: translate(-50%, 16px); }
     #card.show { transform: translate(-50%, 0); }
-    #inv { bottom: 16px; }
-    .slot { width: 46px; height: 46px; font-size: 23px; }
-    #toast { top: auto; bottom: 170px; }
+    #card h3 { font-size: 15px; }
+    #card p { font-size: 13px; line-height: 1.55; }
+    #inv { bottom: calc(12px + env(safe-area-inset-bottom)); max-width: calc(100vw - 20px); gap: 7px; padding: 7px 9px; overflow-x: auto; }
+    #inv .lbl { display: none; }
+    .slot { width: 46px; height: 46px; font-size: 23px; flex: none; }
+    .slot .nm { display: none; }
+    #toast { top: calc(150px + env(safe-area-inset-top)); bottom: auto; font-size: 14px; padding: 8px 14px; max-width: 92vw; white-space: normal; text-align: center; }
+    #sheet { width: 94vw; padding: 18px 14px 16px; max-height: 86dvh; border-radius: 18px; }
+    #sheet h2 { font-size: 18px; padding: 0 30px; }
+    .letter { padding: 10px 12px; font-size: 14px; }
+    .xylo { gap: 4px; }
+    .xylo button { width: 37px; font-size: 11px; }
+    .wheel .num { width: 48px; height: 58px; font-size: 30px; }
+    .wheel button { width: 44px; height: 36px; }
+    .clockface { width: 210px; height: 210px; }
+    .ctrl .btn { padding: 8px 14px; }
+    .radio .fq { font-size: 30px; }
+    .tune-row .btn.small { width: 40px; height: 40px; padding: 0; }
+    .dot1 { width: 44px; height: 44px; top: 30%; }
+    .cloud { top: 30%; transform: scale(.7); transform-origin: left top; }
+  }
+  /* 手机横屏（矮屏） */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .title { left: 14px; top: 10px; }
+    .title h1 { font-size: 20px; }
+    .title p { display: none; }
+    .hud { right: 12px; top: 10px; gap: 6px; }
+    .progress span { font-size: 14px; }
+    .timer { padding: 4px 10px; font-size: 13px; }
+    .toolbar { gap: 6px; }
+    .toolbar .btn { padding: 6px 10px; }
+    .toolbar .t { display: none; }
+    #card { left: 12px; bottom: 12px; width: 280px; padding: 10px 14px; }
+    #inv { left: auto; right: 12px; bottom: 12px; transform: none; }
+    #inv .lbl { display: none; }
+    .slot { width: 42px; height: 42px; font-size: 21px; }
+    #sheet { max-height: 92dvh; padding: 14px 18px; }
+  }
+  /* 触屏：没有鼠标悬停，不显示跟随光标的道具和提示 */
+  @media (hover: none) {
+    #cursorItem, #tip { display: none !important; }
+    .slot:hover { transform: none; }
+    .btn:hover { background: var(--paper); }
+    .btn.primary:hover { background: var(--accent); }
   }
 </style>
 <script type="importmap">
@@ -218,12 +272,14 @@
   </header>
   <div class="ui hud">
     <div class="hudrow">
+      <div class="pill timer" id="shards" title="隐藏的照片碎片">🧩 0/3</div>
       <div class="pill progress" id="progress"></div>
       <div class="pill timer">⏱ <span id="time">00:00</span></div>
     </div>
     <div class="toolbar">
       <button class="btn" id="btnHint">💡<span class="t"> 提示</span></button>
       <button class="btn" id="btnView">🎯<span class="t"> 视角</span></button>
+      <button class="btn" id="btnMusic">🎵<span class="t"> 音乐</span></button>
       <button class="btn" id="btnSound">🔊<span class="t"> 声音</span></button>
       <button class="btn" id="btnReset">↻<span class="t"> 重来</span></button>
     </div>
@@ -247,7 +303,8 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
  * 基础场景
  * ======================================================= */
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const IS_TOUCH = matchMedia('(hover: none)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.75 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -268,6 +325,8 @@ controls.minDistance = 4.5;
 controls.maxDistance = 17;
 controls.minPolarAngle = 0.25;
 controls.maxPolarAngle = Math.PI / 2 - 0.04;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
+controls.rotateSpeed = IS_TOUCH ? 0.8 : 1;
 
 scene.add(new THREE.HemisphereLight('#fff6e8', '#d9c3a5', 2.1));
 const sun = new THREE.DirectionalLight('#fff3df', 2.3);
@@ -567,10 +626,12 @@ cab.add(cabLight);
 /* =========================================================
  * 存档 / 游戏状态
  * ======================================================= */
-const SAVE_KEY = 'cabinet-puzzle-v1';
+const SAVE_KEY = 'cabinet-puzzle-v2';
 const S = {
   introSeen: false, gotKey: false, doorsUnlocked: false, gotBulb: false, lampFixed: false, drawerUnlocked: false,
   radioTuned: false, gotFish: false, catFed: false, boxOpen: false, done: false, hints: 0, time: 0, hintLv: {},
+  gotMagnet: false, gotYarn: false, gotLine: false, gotNoteB: false, noteFull: false, sawFreq: false,
+  sips: 0, shards: { clock: false, tea: false, cat: false },
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch {}
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
@@ -819,10 +880,10 @@ register(plant, {
 /* ---------- 一排书（上层中间）：开灯后书脊上浮现数字 ---------- */
 const POEM = '高高的先开口，矮矮的最后说；\n不会说话的我，就不必排进去了。';
 const bookData = [
-  { c: '#3d5a80', t: 0.12, h: 0.75, n: '2', name: '《小王子》', desc: '“真正重要的东西，用眼睛是看不见的。”' },
-  { c: '#f2cc8f', t: 0.1, h: 0.56, n: '5', name: '《植物图鉴》', desc: '里面夹着几片压平的四叶草。' },
+  { c: '#3d5a80', t: 0.12, h: 0.75, n: '2', name: '《小王子》', desc: '“真正重要的东西，用眼睛是看不见的。”书签夹在第 21 章。' },
+  { c: '#f2cc8f', t: 0.1, h: 0.56, n: '5', name: '《植物图鉴》', desc: '里面夹着压平的四叶草，数了数，一共 4 片。' },
   { c: '#e07a5f', t: 0.14, h: 0.84, n: '7', name: '《星空手账》', desc: '记录了 37 个看过流星的夜晚。' },
-  { c: '#81b29a', t: 0.11, h: 0.65, n: '9', name: '《猫咪食谱》', desc: '第一页写着：小鱼干，永远的神。' },
+  { c: '#81b29a', t: 0.11, h: 0.65, n: '9', name: '《猫咪食谱》', desc: '第 46 页被折了个角：小鱼干，永远的神。' },
   { c: '#b56576', t: 0.12, h: 0.7, n: null, name: '《小诗集》', desc: '扉页上是奶奶的字迹：\n' + POEM },
 ];
 const digitTex = n => canvasTex('digit' + n, ctx => {
@@ -935,11 +996,13 @@ register(lamp, {
 
 /* ---------- 热茶（下层左） ---------- */
 const teacup = new THREE.Group();
+let teaLiquid;
 place(cab, teacup, -1.0, LOWER, 0);
 {
   place(teacup, M(cyl(0.24, 0.2, 0.03, 32), '#98c1d9'), 0, 0.015, 0);
-  place(teacup, M(cyl(0.15, 0.11, 0.2, 32), '#fffaf2'), 0, 0.13, 0);
-  place(teacup, M(cyl(0.135, 0.135, 0.01, 32), '#c07a3a', { outline: false }), 0, 0.222, 0);
+  place(teacup, M(new THREE.CylinderGeometry(0.15, 0.11, 0.2, 32, 1, true), null, { material: mat('#fffaf2', true, { side: THREE.DoubleSide }) }), 0, 0.13, 0);
+  place(teacup, M(cyl(0.112, 0.112, 0.012, 32), '#f1e6d6', { outline: false }), 0, 0.036, 0);
+  teaLiquid = place(teacup, M(cyl(0.135, 0.135, 0.01, 32), '#c07a3a', { outline: false }), 0, 0.222, 0);
   place(teacup, M(new THREE.TorusGeometry(0.055, 0.017, 8, 20), '#fffaf2'), 0.16, 0.14, 0);
   const dot = new THREE.SphereGeometry(0.025, 10, 8); dot.scale(1, 1, 0.4);
   for (let i = 0; i < 3; i++) {
@@ -952,13 +1015,32 @@ place(cab, teacup, -1.0, LOWER, 0);
   place(teacup, M(rbox(0.07, 0.07, 0.07, 0.012), '#ffffff'), 0.33, 0.035, 0.08);
   place(teacup, M(rbox(0.07, 0.07, 0.07, 0.012), '#ffffff'), 0.38, 0.035, -0.02).rotation.y = 0.5;
 }
+const setTeaLevel = n => {
+  const k = 1 - n / 3; // 0 口 = 满，3 口 = 空
+  teaLiquid.visible = k > 0.01;
+  const y = 0.05 + 0.172 * k, r = (0.11 + 0.2 * (y - 0.03) - 0.006) / 0.135;
+  teaLiquid.position.y = y;
+  teaLiquid.scale.set(r, 1, r);
+};
+const TEA_LINES = ['抿了一口——是奶奶最爱的桂花乌龙，还温温的。', '又喝了一口，杯底快露出来了……', '一口气喝光了！咦，杯底粘着一小片硬硬的纸——是照片的碎片！'];
 register(teacup, {
   name: '奶奶的茶杯',
-  desc: '还是温的。奶奶每天雷打不动地喝下午茶，杯垫上印着一个小小的 ☕。',
+  tip: () => (S.sips < 3 ? '奶奶的茶杯 · 喝一口？' : '空茶杯'),
   onClick() {
-    for (let i = 0; i < 6; i++) spawnPuff(worldPos(teacup, 0.25).add(tmpV.set((Math.random() - 0.5) * 0.12, 0, 0)), i * 0.18);
     tween(0.5, (_, p) => { teacup.position.y = LOWER + Math.sin(p * Math.PI) * 0.06; teacup.rotation.z = Math.sin(p * Math.PI * 3) * 0.06 * (1 - p); }, { ease: ease.linear, id: 'tea' });
-    tone(660, 0.12, { vol: 0.08 }); tone(880, 0.15, { vol: 0.06, when: 0.08 });
+    if (S.sips >= 3) {
+      tone(1200, 0.06, { type: 'triangle', vol: 0.06 });
+      say('空茶杯', '杯垫上印着一个小小的 ☕。奶奶每天雷打不动地喝下午茶。');
+      return true;
+    }
+    for (let i = 0; i < 4; i++) spawnPuff(worldPos(teacup, 0.25).add(tmpV.set((Math.random() - 0.5) * 0.12, 0, 0)), i * 0.18);
+    tone(420, 0.12, { vol: 0.08, slideTo: 300 }); tone(380, 0.12, { vol: 0.06, when: 0.15, slideTo: 260 });
+    S.sips++;
+    save();
+    tween(0.6, p => setTeaLevel(S.sips - 1 + p), { delay: 0.2, id: 'tealv' });
+    say('咕嘟', TEA_LINES[S.sips - 1]);
+    if (S.sips === 3) setTimeout(() => collectShard('tea', worldPos(teacup, 0.3)), 900);
+    return true;
   },
 });
 
@@ -1003,7 +1085,7 @@ const melody = [
   [523, 1], [523, 1], [784, 1], [784, 1], [880, 1], [880, 1], [784, 2],
   [698, 1], [698, 1], [659, 1], [659, 1], [587, 1], [587, 1], [523, 2],
 ];
-const BOX_ANSWER = melody.slice(0, 7).map(m => m[0]);
+const BOX_ANSWER = melody.slice(7).map(m => m[0]);
 const music = { on: false, timers: [], beat: 0.4 };
 function playMelody(source, { notes = melody, onNote, onEnd, box = false } = {}) {
   stopMusic();
@@ -1061,6 +1143,7 @@ const jarBulb = new THREE.Group();
   place(jarLid, M(sph(0.045), '#f6eddd'), 0, 0.09, 0);
   jar.add(jarLid);
 }
+let candyEaten = 0;
 register(jar, {
   name: '糖果罐',
   desc: () => (S.gotBulb ? '偷吃一颗应该不会被发现吧？🍬' : '糖果中间埋着一个亮晶晶的东西。'),
@@ -1074,6 +1157,12 @@ register(jar, {
     }, { ease: ease.linear, id: 'lid' });
     candies.forEach((c, i) => tween(0.55, (_, p) => (c.position.y = c.userData.baseY + Math.sin(p * Math.PI) * (0.12 + (i / candies.length) * 0.18)), { ease: ease.linear, delay: 0.05 + i * 0.03, id: 'candy' + i }));
     [880, 1046, 1318, 1568].forEach((f, i) => tone(f, 0.1, { vol: 0.06, when: 0.1 + i * 0.06 }));
+    if (S.gotBulb) {
+      candyEaten++;
+      const lines = { 1: '偷吃了一颗。甜！🍬', 3: '第三颗了……奶奶说一天最多吃五颗。', 5: '第五颗！今天的份额用完啦。', 8: '牙开始隐隐作痛……别吃了别吃了。', 12: '团子在抽屉里翻了个身，好像在嫌弃你。' };
+      say('糖果罐', lines[candyEaten] || `已经吃了 ${candyEaten} 颗了……`);
+      return true;
+    }
     if (!S.gotBulb) {
       setFlag('gotBulb');
       tween(0.8, p => { jarBulb.position.y = 0.2 + 0.75 * p; jarBulb.rotation.z = 0.5 * (1 - p); jarBulb.scale.setScalar(1 + 0.4 * Math.sin(p * Math.PI)); },
@@ -1186,17 +1275,43 @@ function feedCat() {
     revealBox();
   });
 }
+let catPokes = 0, catPets = 0;
+const POKE_LINES = ['团子睡得很沉，肚子还在咕咕叫。怎么叫都叫不醒……它身子底下好像压着什么东西。', '戳了戳团子的肚子。软软的，它只是翻了个白眼继续睡。', '团子用尾巴把你的手拍开了。', '团子发出一声低沉的「呜——」。饿着肚子的猫可惹不起。', '……你决定还是先去找点吃的。'];
+const PET_LINES = ['呼噜呼噜～', '再挠挠下巴！', '左边一点……对就是那！', '喵呜～～（四脚朝天）', ''];
+function catRoll() {
+  catState.awake = true;
+  setEyes(true);
+  sequence([
+    { d: 0.4, e: ease.back, f: p => { catBody.rotation.x = p * 0.9; catHead.rotation.z = 0.5 * p; } },
+    { d: 0.6, e: ease.linear, f: (_, p) => (catBody.rotation.x = 0.9 + Math.sin(p * Math.PI * 4) * 0.12) },
+    { d: 0.4, f: p => { catBody.rotation.x = 0.9 * (1 - p); catHead.rotation.z = 0.5 * (1 - p); } },
+  ], () => { setEyes(false); catState.awake = false; });
+  setTimeout(() => collectShard('cat', worldPos(cat, 0.4)), 600);
+}
 register(cat, {
   name: '橘猫 · 团子',
-  desc: '吃饱了的团子在抽屉里打着呼噜，被吵醒会有点小脾气。',
+  tip: () => (S.catFed ? '橘猫 · 团子 · 摸一摸' : '睡着的橘猫'),
   onClick() {
     if (!S.catFed) {
-      catSay('咕噜噜……', 1600);
+      catSay(['咕噜噜……', '……zzZ', '呜——', '哼。', '咕。'][Math.min(catPokes, 4)], 1600);
       tone(90, 0.3, { type: 'sine', vol: 0.15, slideTo: 60 });
-      say('橘猫 · 团子', '团子睡得很沉，肚子还在咕咕叫。怎么叫都叫不醒……它身子底下好像压着什么东西。');
+      say('橘猫 · 团子', POKE_LINES[Math.min(catPokes, POKE_LINES.length - 1)]);
+      catPokes++;
       return true;
     }
-    wakeCat();
+    if (S.shards.cat) { wakeCat(); say('橘猫 · 团子', '吃饱了的团子在抽屉里打着呼噜，被吵醒会有点小脾气。'); return true; }
+    catPets++;
+    for (let i = 0; i < 2; i++) setTimeout(() => spawnText('♥', '#f4a6b8', worldPos(catHead, 0.2), { size: 0.15, rise: 0.5 }), i * 200);
+    tone(200 + catPets * 40, 0.25, { type: 'triangle', vol: 0.05 });
+    if (catPets >= 5) {
+      catSay('喵呜～～（翻了个身）', 2400);
+      say('翻肚皮了！', '团子舒服得翻了个身——一小片纸从它的肚皮底下掉了出来。');
+      catRoll();
+      return true;
+    }
+    catSay(PET_LINES[catPets - 1], 1600);
+    tween(0.4, (_, p) => (catHead.rotation.z = Math.sin(p * Math.PI * 2) * 0.15), { ease: ease.linear, id: 'pet' });
+    return true;
   },
   onUse(item) {
     if (item !== 'fish') return false;
@@ -1223,13 +1338,24 @@ place(drawer, yarn, 0.75, 0.21, 0.1);
   th.rotation.set(Math.PI / 2, 0, 0);
   th.position.set(-0.12, -0.16, 0.05);
   yarn.add(th);
-  place(yarn, M(rbox(0.12, 0.08, 0.01, 0.01), '#fffaf1'), 0.1, -0.08, 0.2).rotation.z = 0.3;
+  yarn.userData.note = place(yarn, M(rbox(0.12, 0.08, 0.01, 0.01), '#fffaf1'), 0.1, -0.08, 0.2);
+  yarn.userData.note.rotation.z = 0.3;
   yarn.userData.ball = ball;
 }
 register(yarn, {
   name: '毛线球',
-  desc: '团子最爱的玩具。线头上系着一张小纸条：「想奶奶了，就听 FM 101.5」。',
+  tip: () => (S.gotYarn ? '团子的另一个毛线球' : '毛线球（线头上系着纸条）'),
+  desc: '团子的毛线球。猫的玩具好像怎么都拿不完。',
   onClick() {
+    if (!S.gotYarn) {
+      setFlag('gotYarn');
+      yarn.userData.note.visible = false;
+      tone(300, 0.4, { type: 'triangle', vol: 0.06, slideTo: 200 });
+      setTimeout(() => gainItem('yarn'), 100);
+      setTimeout(() => gainItem('noteA'), 900);
+      say('毛线球', '你从球上扯下一长段毛线，还有线头上系着的半张纸条——另一半被撕掉了。', '新发现');
+      return true;
+    }
     if (yarn.userData.busy) return;
     yarn.userData.busy = true;
     const ball = yarn.userData.ball, x0 = 0.75, x1 = 0.48, r = 0.17;
@@ -1342,6 +1468,25 @@ const iconTex = ch => canvasTex('icon' + ch, ctx => {
   }
   place(clockBody, M(sph(0.035), '#8a5a3c'), 0, 0.31, 0);
 }
+const clockShard = new THREE.Group();
+{
+  clockShard.position.set(0.02, -0.05, -0.075);
+  clockShard.rotation.set(0, Math.PI, 0.2);
+  clockBody.add(clockShard);
+  place(clockShard, M(rbox(0.13, 0.1, 0.008, 0.004), '#fffaf1'), 0, 0, 0);
+  place(clockShard, M(rbox(0.06, 0.02, 0.01, 0.003), '#f2cc8f', { outline: false }), 0.03, 0.05, 0.002).rotation.z = 0.5;
+  place(clockShard, M(rbox(0.06, 0.02, 0.01, 0.003), '#f2cc8f', { outline: false }), -0.03, -0.05, 0.002).rotation.z = 0.5;
+}
+register(clockShard, {
+  name: '贴着的小纸片',
+  tip: () => '闹钟背面贴着什么',
+  onClick() {
+    clockShard.visible = false;
+    collectShard('clock', worldPos(clockShard, 0.1));
+    say('闹钟背面', '用胶带贴着一小片硬纸——像是从照片上撕下来的。');
+    return true;
+  },
+});
 const clockState = { spin: 0, h: 10, m: 10 };
 function ringClock() {
   tween(1.6, p => (clockState.spin = p * Math.PI * 2 * 2), { id: 'clockspin', onDone: () => (clockState.spin = 0) });
@@ -1406,8 +1551,208 @@ register(globe, {
       say('会转的世界', '地球仪越转越快，底座的暗格「咔」地弹开——里面是一条香喷喷的小鱼干！', '进展');
       return true;
     }
+    if (S.gotFish) {
+      const DEST = ['冰岛 —— 奶奶说想去看极光。', '京都 —— 秋天的枫叶应该很好看。', '撒哈拉 —— 团子会喜欢这么大的猫砂盆吧。', '南极 —— 企鹅！', '太平洋正中间 —— 呃，换一个。', '奶奶家楼下 —— 绕了一圈又回来了。'];
+      say('下一站去哪儿？', '手指停在了：' + DEST[Math.floor(Math.random() * DEST.length)]);
+      return true;
+    }
   },
 });
+
+/* ---------- 柜子左侧：猫脸冰箱贴 ---------- */
+const magnet = new THREE.Group();
+place(cab, magnet, -W / 2 - 0.015, y0 + 1.75, 0.15);
+magnet.rotation.y = -Math.PI / 2;
+{
+  const f = cyl(0.11, 0.11, 0.04, 28); f.rotateX(Math.PI / 2);
+  place(magnet, M(f, '#f0a35e'), 0, 0, 0);
+  const ear = new THREE.ConeGeometry(0.045, 0.08, 12);
+  for (const s of [-1, 1]) place(magnet, M(ear, '#f0a35e'), s * 0.065, 0.1, 0).rotation.z = -s * 0.35;
+  for (const s of [-1, 1]) place(magnet, M(sph(0.014, 8, 6), INK, { outline: false }), s * 0.04, 0.01, 0.022);
+  place(magnet, M(sph(0.012, 8, 6), '#e5737f', { outline: false }), 0, -0.02, 0.024);
+}
+register(magnet, {
+  name: '猫脸冰箱贴',
+  tip: () => '柜子侧面的猫脸冰箱贴',
+  onClick() {
+    setFlag('gotMagnet');
+    tween(0.4, p => { magnet.position.x = -W / 2 - 0.015 - 0.3 * p; magnet.scale.setScalar(1 - p * 0.9); }, { ease: ease.back, onDone: () => (magnet.visible = false) });
+    tone(900, 0.05, { type: 'square', vol: 0.04 });
+    setTimeout(() => gainItem('magnet'), 300);
+    say('猫脸冰箱贴', '「啪」地从柜子侧面取了下来。吸力还挺强的。');
+    return true;
+  },
+});
+
+/* ---------- 柜子背后：旧信箱 ---------- */
+const mailbox = new THREE.Group();
+place(world, mailbox, 0.75, 0, -1.7);
+mailbox.rotation.y = Math.PI;
+const mailPaper = new THREE.Group();
+{
+  place(mailbox, M(cyl(0.035, 0.035, 0.9, 10), C.leg), 0, 0.45, 0);
+  place(mailbox, M(rbox(0.5, 0.36, 0.42, 0.06), '#e07a5f'), 0, 1.05, 0);
+  place(mailbox, M(cyl(0.25, 0.25, 0.42, 24), '#e07a5f'), 0, 1.22, 0).rotation.x = Math.PI / 2;
+  place(mailbox, M(rbox(0.26, 0.03, 0.02, 0.01), INK, { outline: false }), 0, 1.15, 0.22);
+  place(mailbox, M(rbox(0.03, 0.22, 0.03, 0.01), '#f2c14e'), 0.28, 1.2, 0.05);
+  place(mailbox, M(rbox(0.12, 0.08, 0.02, 0.01), '#f2c14e'), 0.28, 1.3, 0.12);
+  mailbox.add(mailPaper);
+  place(mailPaper, M(rbox(0.12, 0.07, 0.005, 0.002), '#fffaf1'), 0.03, 1.17, 0.235).rotation.z = 0.15;
+}
+register(mailbox, {
+  name: '旧信箱',
+  tip: () => (S.gotNoteB ? '空空的旧信箱' : '旧信箱（投递口露出一角纸）'),
+  onClick() {
+    if (S.gotNoteB) { say('旧信箱', '空了。奶奶以前总在这里等你寄来的明信片。'); return true; }
+    tone(180, 0.1, { type: 'triangle', vol: 0.08 });
+    tween(0.4, (_, p) => (mailbox.rotation.z = Math.sin(p * Math.PI * 4) * 0.03 * (1 - p)), { ease: ease.linear, id: 'mb' });
+    say('旧信箱', '投递口卡着一角纸片，可缝太窄了，手指伸不进去……要是有什么能把它「吸」出来就好了。');
+    return true;
+  },
+  onUse(item) {
+    if (item !== 'line') return false;
+    setFlag('gotNoteB');
+    tween(0.8, p => { mailPaper.position.set(0, 0.15 * p, 0.3 * p); mailPaper.rotation.x = -p; }, { ease: ease.out, onDone: () => (mailPaper.visible = false) });
+    tone(500, 0.1, { vol: 0.08 }); tone(800, 0.12, { vol: 0.08, when: 0.12 });
+    setTimeout(() => gainItem('noteB'), 700);
+    say('钓上来了！', '冰箱贴「嗒」地吸住了纸片上的回形针——拉出来的是另外半张纸条！', '进展');
+    return true;
+  },
+});
+
+/* ---------- 视角谜题：只有站对位置才能看清的涂鸦 ---------- */
+const VIEW_SPOT = new THREE.Vector3().setFromSphericalCoords(7, 1.2, -2.4).add(TARGET);
+const projCam = new THREE.PerspectiveCamera(12, 2, 0.5, 30);
+projCam.position.copy(VIEW_SPOT);
+projCam.lookAt(-W / 2 + 0.35, y0 + 1.45, -D / 2);
+projCam.updateMatrixWorld();
+const projVP = new THREE.Matrix4().multiplyMatrices(projCam.projectionMatrix, projCam.matrixWorldInverse);
+// 投影深度图：被纸箱挡住的部分不会画到柜子上（和阴影贴图同理）
+const projRT = new THREE.WebGLRenderTarget(1024, 512, { depthTexture: new THREE.DepthTexture(1024, 512) });
+const projDepthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
+camera.layers.enable(1);
+function renderProjDepth() {
+  const sm = renderer.shadowMap.autoUpdate;
+  renderer.shadowMap.autoUpdate = false;
+  scene.overrideMaterial = projDepthMat;
+  renderer.setRenderTarget(projRT);
+  renderer.clear();
+  renderer.render(scene, projCam);
+  renderer.setRenderTarget(null);
+  scene.overrideMaterial = null;
+  renderer.shadowMap.autoUpdate = sm;
+}
+const doodleTex = (() => {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.font = '900 150px "Arial Rounded MT Bold", "PingFang SC", sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineJoin = 'round';
+  g.lineWidth = 22; g.strokeStyle = INK; g.strokeText('101.5', 256, 150);
+  g.fillStyle = '#ffd25e'; g.fillText('101.5', 256, 150);
+  g.font = '900 60px "PingFang SC", sans-serif';
+  g.lineWidth = 12; g.strokeText('FM', 256, 40); g.fillStyle = '#f4a6b8'; g.fillText('FM', 256, 40);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+})();
+const doodleMat = new THREE.ShaderMaterial({
+  uniforms: { map: { value: doodleTex }, depthMap: { value: projRT.depthTexture }, vp: { value: projVP }, glow: { value: 0 }, time: { value: 0 }, alpha: { value: 0 } },
+  transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2,
+  vertexShader: /* glsl */`
+    uniform mat4 vp;
+    varying vec4 vProj;
+    void main() {
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vProj = vp * wp;
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D map; uniform sampler2D depthMap; uniform float glow; uniform float time; uniform float alpha;
+    varying vec4 vProj;
+    void main() {
+      if (alpha < 0.01 || vProj.w <= 0.0) discard;
+      vec2 uv = vProj.xy / vProj.w * 0.5 + 0.5;
+      if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
+      if (vProj.z / vProj.w * 0.5 + 0.5 > texture2D(depthMap, uv).x + 0.0004) discard;
+      vec4 c = texture2D(map, uv);
+      if (c.a < 0.5) discard;
+      vec3 col = mix(c.rgb, vec3(1.0, 0.95, 0.7), glow * (0.35 + 0.15 * sin(time * 4.0)));
+      gl_FragColor = vec4(col, 0.92 * alpha);
+      #include <colorspace_fragment>
+    }`,
+});
+const doodleBack = new THREE.Mesh(new THREE.PlaneGeometry(W, H), doodleMat);
+doodleBack.layers.set(1);
+doodleBack.position.set(0, y0 + H / 2, -D / 2 - 0.004);
+doodleBack.rotation.y = Math.PI;
+cab.add(doodleBack);
+const doodleSide = new THREE.Mesh(new THREE.PlaneGeometry(D, H), doodleMat);
+doodleSide.layers.set(1);
+doodleSide.position.set(-W / 2 - 0.004, y0 + H / 2, 0);
+doodleSide.rotation.y = -Math.PI / 2;
+doodleSide.raycast = () => {};
+cab.add(doodleSide);
+const doodleFloor = new THREE.Mesh(new THREE.PlaneGeometry(6, 4.2), doodleMat);
+doodleFloor.layers.set(1);
+doodleFloor.rotation.x = -Math.PI / 2;
+doodleFloor.position.set(0, 0.036, -2.53);
+doodleFloor.raycast = () => {};
+world.add(doodleFloor);
+// 柜子左后方堆着的旧纸箱：也接住一部分涂鸦，换个角度就拼不上了
+const boxes = new THREE.Group();
+world.add(boxes);
+[[0.9, 0.7, 0.8, -1.8, 0.35, -1.95, 0.15], [0.75, 0.62, 0.7, -1.75, 1.01, -1.9, -0.15], [0.62, 0.55, 0.6, -1.78, 1.595, -1.92, 0.25], [0.5, 0.45, 0.48, -1.72, 2.095, -1.88, -0.3]].forEach(([w, h, d, x, y, z, ry]) => {
+  const b = place(boxes, M(rbox(w, h, d, 0.02), '#d9b48a'), x, y, z);
+  b.rotation.y = ry;
+  place(b, M(rbox(w * 0.18, h * 1.002, d * 1.004, 0.004), '#e8cfa6', { outline: false }), 0, 0, 0);
+  const ov = new THREE.Mesh(new THREE.BoxGeometry(w + 0.006, h + 0.006, d + 0.006), doodleMat);
+  ov.layers.set(1);
+  ov.raycast = () => {};
+  b.add(ov);
+});
+register(boxes, {
+  name: '旧纸箱',
+  desc: () => ['箱子上写着「冬天的毛衣」。', '箱子上写着「团子的玩具（备用）」——这猫到底有多少玩具？', '箱子上写着「勿动！」……好吧，不动。'][Math.floor(Math.random() * 3)],
+  onClick() {
+    tween(0.4, (_, p) => (boxes.children[3].rotation.z = Math.sin(p * Math.PI * 4) * 0.06 * (1 - p)), { ease: ease.linear, id: 'boxes' });
+    tone(160, 0.1, { type: 'triangle', vol: 0.08 });
+  },
+});
+register(doodleBack, {
+  name: '柜子背面',
+  tip: () => (S.noteFull ? '柜子背面的淡淡划痕' : '柜子背面'),
+  onClick() {
+    say('乱七八糟的涂鸦', S.sawFreq
+      ? '现在你知道了：从左后方高一点的地方看，这些线条会拼成「FM 101.5」。'
+      : (S.noteFull
+        ? '仔细看，背板上有一些淡淡的黄色划痕，地板和纸箱上也有……纸条说要从「左后方稍高一点」的地方看。'
+        : '光秃秃的柜子背板，落了一层薄灰。好像什么也没有。'));
+    return true;
+  },
+});
+let viewHold = 0;
+function sawDoodle() {
+  setFlag('sawFreq');
+  sfx.sparkle();
+  showToast('👀 看出来了：<b>FM 101.5</b>');
+  for (let i = 0; i < 8; i++) setTimeout(() => spawnText('✦', '#ffd25e', new THREE.Vector3(-0.35 + (Math.random() - 0.5) * 1.6, 0.6 + Math.random() * 1.2, -D / 2 - 0.3), { size: 0.18, rise: 0.6, drift: 0.8 }), i * 90);
+  say('原来如此！', '从这个角度看过去，柜背和地板上的线条严丝合缝地拼成了——「FM 101.5」！', '进展');
+}
+
+/* ---------- 隐藏的照片碎片 ---------- */
+function collectShard(id, pos) {
+  if (S.shards[id]) return;
+  S.shards[id] = true;
+  save();
+  const n = Object.values(S.shards).filter(Boolean).length;
+  sfx.sparkle();
+  if (pos) for (let i = 0; i < 6; i++) setTimeout(() => spawnText(i % 2 ? '✦' : '🧩', '#f2c14e', pos, { size: 0.18, rise: 0.6, drift: 0.6 }), i * 90);
+  showToast(`🧩 找到照片碎片 ${n}/3`);
+  updateHud();
+  if (n === 3) setTimeout(() => say('碎片集齐了！', S.done ? '三片碎片都找到了。再打开一次八音盒看看吧……' : '三片碎片都找到了！它们好像能拼回某张照片里缺掉的部分。', '隐藏'), 1600);
+}
 
 /* =========================================================
  * 背包 / 道具
@@ -1417,14 +1762,51 @@ const ITEMS = {
   key: { icon: '🗝️', name: '小铜钥匙', has: () => S.gotKey && !S.doorsUnlocked },
   bulb: { icon: '💡', name: '小灯泡', has: () => S.gotBulb && !S.lampFixed },
   fish: { icon: '🐟', name: '小鱼干', has: () => S.gotFish && !S.catFed },
+  magnet: { icon: '🧲', name: '猫脸冰箱贴', has: () => S.gotMagnet && !S.gotLine, desc: '背面是一块很强的磁铁。' },
+  yarn: { icon: '🧶', name: '一段毛线', has: () => S.gotYarn && !S.gotLine, desc: '长长的一段粉色毛线。' },
+  line: { icon: '🎣', name: '磁铁钓竿', has: () => S.gotLine && !S.gotNoteB, desc: '毛线绑着冰箱贴——可以去「钓」够不着的铁东西。' },
+  noteA: { icon: '📄', name: '半张纸条（上）', has: () => S.gotYarn && !S.noteFull, desc: '「想奶奶了，就听她的电台。频率我画在……」后面被撕掉了。' },
+  noteB: { icon: '📃', name: '半张纸条（下）', has: () => S.gotNoteB && !S.noteFull, desc: '「……柜子背后了。要从左后方稍高一点的地方看过去才认得出哦。」别着一枚回形针。' },
+  note: { icon: '📝', name: '拼好的纸条', has: () => S.noteFull },
 };
+const COMBOS = [
+  { a: 'magnet', b: 'yarn', flag: 'gotLine', out: 'line', msg: '把毛线牢牢系在冰箱贴上——做成了一根「磁铁钓竿」！' },
+  { a: 'noteA', b: 'noteB', flag: 'noteFull', out: 'note', msg: '两张纸条的撕口严丝合缝地对上了！' },
+];
+function tryCombine(a, b) {
+  const c = COMBOS.find(c => (c.a === a && c.b === b) || (c.a === b && c.b === a));
+  select(null);
+  if (!c) {
+    tone(200, 0.15, { type: 'triangle', vol: 0.1 });
+    return say('组合', `${ITEMS[a].icon} 和 ${ITEMS[b].icon}……这两样东西好像拼不到一起。`);
+  }
+  setFlag(c.flag);
+  gainItem(c.out);
+  say('组合成功', c.msg, '组合');
+  if (c.out === 'note') setTimeout(openNote, 900);
+}
+function openNote() {
+  const s = openModal(`
+    <h2>📝 拼好的纸条</h2>
+    <div class="letter">
+      想奶奶了，就听她的电台。频率我画在<br>
+      <span style="color:#b56576">～～～～～～ 撕口 ～～～～～～</span><br>
+      ……柜子背后了。要从<em>左后方</em>、<em>稍高一点</em>的地方看过去才认得出哦。
+      <div class="sign">—— 奶奶</div>
+    </div>
+    <p class="sub">${S.sawFreq ? '你已经看出来啦：FM 101.5。' : '提示：拖动画面绕到柜子后面，再慢慢调整角度和高度。'}</p>
+    <div class="row"><button class="btn primary" id="ok">收好</button></div>
+  `);
+  s.querySelector('#ok').onclick = closeModal;
+  tone(500, 0.2, { type: 'triangle', vol: 0.06, slideTo: 700 });
+}
 const inv = $('#inv'), cursorItem = $('#cursorItem');
 let selected = null;
 function updateInv() {
   if (selected && !ITEMS[selected].has()) select(null);
   const held = Object.keys(ITEMS).filter(k => ITEMS[k].has());
   let html = '<span class="lbl">背包</span>';
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < Math.max(5, held.length); i++) {
     const k = held[i];
     html += k
       ? `<div class="slot${selected === k ? ' sel' : ''}" data-k="${k}">${ITEMS[k].icon}<span class="nm">${ITEMS[k].name}</span></div>`
@@ -1445,10 +1827,12 @@ inv.addEventListener('click', e => {
   audio();
   sfx.click();
   const k = s.dataset.k;
-  if (k === 'letter') return openLetter();
   if (selected === k) return select(null);
+  if (selected && selected !== 'letter' && selected !== 'note' && k !== 'letter' && k !== 'note') return tryCombine(selected, k);
+  if (k === 'letter') return openLetter();
+  if (k === 'note') return openNote();
   select(k);
-  say(ITEMS[k].icon + ' ' + ITEMS[k].name, '已拿在手上。点击场景里想用它的地方吧（Esc 或再点一次可以放下）。');
+  say(ITEMS[k].icon + ' ' + ITEMS[k].name, (ITEMS[k].desc ? ITEMS[k].desc + ' ' : '') + '已拿在手上。点场景里的东西使用它，或点背包里另一样东西试试组合（' + (matchMedia('(hover: none)').matches ? '再点一下它可以放下' : 'Esc 放下') + '）。');
 });
 addEventListener('pointermove', e => {
   cursorItem.style.left = e.clientX + 'px';
@@ -1467,7 +1851,7 @@ function gainItem(k) {
  * ======================================================= */
 const STEPS = [
   ['🗝️', 'gotKey', '拿到钥匙'], ['🚪', 'doorsUnlocked', '打开柜门'], ['💡', 'lampFixed', '修好台灯'], ['🔢', 'drawerUnlocked', '打开抽屉'],
-  ['📻', 'radioTuned', '收听电台'], ['🐟', 'catFed', '喂饱团子'], ['🎵', 'boxOpen', '打开八音盒'],
+  ['🎣', 'gotNoteB', '钓出纸条'], ['👀', 'sawFreq', '看懂涂鸦'], ['📻', 'radioTuned', '收听电台'], ['🐟', 'catFed', '喂饱团子'], ['🎵', 'boxOpen', '打开八音盒'],
 ];
 const progressEl = $('#progress');
 progressEl.innerHTML = STEPS.map(([ic, k, t]) => `<span data-k="${k}" title="${t}">${ic}</span>`).join('');
@@ -1478,6 +1862,10 @@ function updateHud() {
     s.classList.toggle('on', on);
   });
   $('#time').textContent = fmtTime(S.time);
+  const n = Object.values(S.shards).filter(Boolean).length;
+  const sh = $('#shards');
+  sh.textContent = `🧩 ${n}/3`;
+  sh.style.opacity = n ? 1 : 0.45;
 }
 const fmtTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 setInterval(() => {
@@ -1493,10 +1881,16 @@ const HINTS = {
   bulb: ['台灯缺个灯泡。柜子里有没有透明的、能装小东西的容器？', '点开下层右边的糖果罐看看。'],
   lamp: ['灯泡拿到了，它该装在哪儿呢？', '点选背包里的 💡，再点击上层右边的蘑菇台灯。'],
   drawer: ['抽屉的密码是四位数。台灯亮着的时候，仔细看看书架上的书脊，再读读那本《小诗集》。', '诗的意思：按书的高矮，从最高读到最矮；没有数字的《小诗集》跳过。'],
-  radio: ['抽屉里的毛线球上系着一张纸条。', '点击收音机，把频率调到 FM 101.5。信号格越满越接近。'],
+  yarn: ['抽屉里除了团子，还有个毛线球，线头上好像系着什么。', '点击抽屉右边的毛线球。'],
+  mailbox: ['纸条的另一半会在哪儿？转动视角，绕到柜子的后面看看。', '柜子背后有一个旧信箱，投递口卡着一张纸，但手伸不进去。'],
+  combine: ['够不着的纸片……要是有根绳子，绳子末端还能「吸」住东西就好了。柜子外侧找找？', '柜子左侧面有个猫脸冰箱贴（磁铁）。在背包里先点 🧲 再点 🧶，组合成钓竿。'],
+  fish2: ['你已经做好钓竿了，去「钓」信箱里的纸吧。', '点选背包里的 🎣，再点击柜子背后的旧信箱。'],
+  notes: ['两张纸条的撕口看起来能对上。', '在背包里先点 📄，再点 📃，把它们拼起来。'],
+  view: ['纸条说频率「画在柜子背后」，要从「左后方、稍高一点」的地方看。', '拖动画面转到柜子左后方，从比柜顶略高一点的角度往柜背看，地上和柜背的线条会拼成一串数字。滚轮可以调远近。'],
+  radio: ['涂鸦里藏着的是一个电台频率。', '点击收音机，用 ◀ ▶ 把频率精确调到 FM 101.5，再按「锁定这个频率」。'],
   fish: ['电台说点心「藏在会转的世界里」。', '去点一点柜顶右边的地球仪。'],
   feed: ['团子饿得叫不醒，它最爱吃什么？', '点选背包里的 🐟，再点击抽屉里的团子。'],
-  box: ['八音盒要你弹出「那首睡前歌」的开头。还记得收音机里放的歌吗？琴键的颜色和收音机上亮起的音符颜色是对应的。', '《小星星》的前七个音：Do Do Sol Sol La La Sol。'],
+  box: ['八音盒要你弹出「那首睡前歌」的第二句。还记得收音机里放的歌吗？琴键的颜色和收音机上亮起的音符颜色是对应的。', '《小星星》的第二句（后七个音）：Fa Fa Mi Mi Re Re Do。'],
 };
 function stage() {
   if (!S.gotKey) return 'clock';
@@ -1504,7 +1898,16 @@ function stage() {
   if (!S.gotBulb && !S.lampFixed) return 'bulb';
   if (!S.lampFixed) return 'lamp';
   if (!S.drawerUnlocked) return 'drawer';
-  if (!S.radioTuned) return 'radio';
+  if (!S.radioTuned) {
+    if (!S.gotYarn) return 'yarn';
+    if (!S.gotNoteB) {
+      if (S.gotLine) return 'fish2';
+      return S.gotMagnet || S.hintLv.mailbox ? 'combine' : 'mailbox';
+    }
+    if (!S.noteFull) return 'notes';
+    if (!S.sawFreq) return 'view';
+    return 'radio';
+  }
   if (!S.gotFish && !S.catFed) return 'fish';
   if (!S.catFed) return 'feed';
   if (!S.boxOpen) return 'box';
@@ -1720,13 +2123,18 @@ function openRadioModal() {
   const dots = melody.map(([f, d], i) => `<i class="${d > 1 ? 'long' : ''}${i === 6 ? ' gap' : ''}" style="background:${noteOf(f).c}"></i>`).join('');
   const s = openModal(`
     <h2>📻 复古收音机</h2>
-    <p class="sub">${tuned ? '「奶奶电台」还在轻轻地播着。' : '拖动旋钮调频。滋滋啦啦的，哪里有信号呢？'}</p>
+    <p class="sub">${tuned ? '「奶奶电台」还在轻轻地播着。' : '调到想听的频率，再按「锁定」。奶奶的电台信号很弱，不锁定是听不清的。'}</p>
     <div class="radio">
       <div class="fq"><span id="fq">${radioState.freq.toFixed(1)}</span><small>MHz</small></div>
       <div class="bars">${[0, 1, 2, 3, 4].map(i => `<i style="height:${8 + i * 4}px"></i>`).join('')}</div>
     </div>
-    <input type="range" id="fr" min="${FM_MIN * 10}" max="${FM_MAX * 10}" step="1" value="${Math.round(radioState.freq * 10)}" ${tuned ? 'disabled' : ''}>
+    <div class="tune-row">
+      <button class="btn small" id="fdn" ${tuned ? 'disabled' : ''}>◀</button>
+      <input type="range" id="fr" min="${FM_MIN * 10}" max="${FM_MAX * 10}" step="1" value="${Math.round(radioState.freq * 10)}" ${tuned ? 'disabled' : ''}>
+      <button class="btn small" id="fup" ${tuned ? 'disabled' : ''}>▶</button>
+    </div>
     <div class="scale"><span>87.5</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span></div>
+    <div class="row" ${tuned ? 'style="display:none"' : ''}><button class="btn primary" id="fok">📡 锁定这个频率</button></div>
     <div class="broadcast" id="bc"></div>
     <div class="notes" id="notes">${dots}</div>
     <div class="row"><button class="btn" id="replay" ${tuned ? '' : 'hidden'}>▶ 再听一遍</button></div>
@@ -1734,13 +2142,22 @@ function openRadioModal() {
   const fq = s.querySelector('#fq'), bars = s.querySelectorAll('.bars i'), fr = s.querySelector('#fr');
   const bc = s.querySelector('#bc'), noteEls = s.querySelectorAll('#notes i'), replay = s.querySelector('#replay');
   const BROADCAST = '「滋……这里是奶奶电台。小家伙，今天的点心，藏在<b>会转的世界</b>里哦。给你唱首睡前歌吧——」';
+  const FAKE = [
+    { f: 88.6, t: '「……天气预报：明天晴，适合晒被子、晒猫。」' },
+    { f: 93.1, t: '「……今日幸运数字是：4、0、3、1！祝您好运——」' },
+    { f: 97.4, t: '「……现在是北京时间，下午三点整。嘟——」' },
+    { f: 104.8, t: '「……生活小妙招：小鱼干要晒足三天才好吃哦。」' },
+  ];
   const update = () => {
     const f = radioState.freq;
-    const st = Math.max(0, 1 - Math.abs(f - FM_TARGET) / 5);
-    const n = S.radioTuned ? 5 : Math.ceil(st * st * 5 - 0.001);
+    const fake = FAKE.find(x => Math.abs(f - x.f) <= 0.2);
+    // 奶奶电台信号太弱：滑动时和别处一样只有杂音，只有假电台会有信号
+    const st = fake ? 1 - Math.abs(f - fake.f) / 0.25 : 0;
+    const n = S.radioTuned ? 5 : Math.ceil(st * 5 - 0.001);
     bars.forEach((b, i) => b.classList.toggle('on', i < n));
     fq.textContent = f.toFixed(1);
     setNoise(S.radioTuned ? 0 : 0.035 + 0.09 * (1 - st));
+    if (!S.radioTuned) bc.innerHTML = fake ? fake.t : '';
   };
   const sing = () => {
     noteEls.forEach(e => e.classList.remove('on'));
@@ -1758,12 +2175,17 @@ function openRadioModal() {
   }
   startNoise();
   update();
-  fr.oninput = () => {
-    radioState.freq = fr.value / 10;
-    if (Math.abs(radioState.freq - FM_TARGET) <= 0.15) {
+  const fdn = s.querySelector('#fdn'), fup = s.querySelector('#fup'), fok = s.querySelector('#fok');
+  const setF = v => { fr.value = Math.max(FM_MIN * 10, Math.min(FM_MAX * 10, v)); radioState.freq = fr.value / 10; update(); };
+  fr.oninput = () => setF(+fr.value);
+  fdn.onclick = () => setF(+fr.value - 1);
+  fup.onclick = () => setF(+fr.value + 1);
+  fok.onclick = () => {
+    const f = Math.round(radioState.freq * 10);
+    if (f === FM_TARGET * 10) {
       radioState.freq = FM_TARGET;
-      fr.value = FM_TARGET * 10;
-      fr.disabled = true;
+      fr.disabled = fdn.disabled = fup.disabled = true;
+      fok.parentElement.style.display = 'none';
       setFlag('radioTuned');
       stopNoise();
       update();
@@ -1773,7 +2195,12 @@ function openRadioModal() {
       setTimeout(sing, 1500);
       return;
     }
-    update();
+    const fake = FAKE.find(x => Math.abs(radioState.freq - x.f) <= 0.2);
+    s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+    tone(180, 0.25, { type: 'square', vol: 0.05 });
+    bc.innerHTML = fake
+      ? '<span style="opacity:.7">（锁定了……可这只是个普通电台，不是奶奶的声音。）</span>'
+      : '<span style="opacity:.7">（锁定了……除了沙沙声，什么也没有。）</span>';
   };
 }
 
@@ -1782,7 +2209,7 @@ function openBoxModal() {
   const keys = NOTES.map((n, i) => `<button data-i="${i}" style="background:${n.c};height:${120 - i * 11}px">${n.n}</button>`).join('');
   const s = openModal(`
     <h2>🎵 小八音盒</h2>
-    <p class="sub">盒盖上刻着一行小字：<br>「弹出那首<b>睡前歌的开头</b>（七个音），我就为你打开。」</p>
+    <p class="sub">盒盖上刻着一行小字：<br>「弹出那首<b>睡前歌的第二句</b>（七个音），我就为你打开。」</p>
     <div class="slots7">${'<i></i>'.repeat(7)}</div>
     <div class="xylo">${keys}</div>
     <div class="row"><button class="btn" id="clr">清空</button></div>
@@ -1818,13 +2245,21 @@ function openBoxModal() {
 }
 
 /* ---------- 结局 ---------- */
-function photoSVG() {
+function photoSVG(full) {
+  const tear = (x, y, w, h) => `<path d="M${x} ${y} l${w * 0.3} ${h * 0.12} l${w * 0.25} -${h * 0.1} l${w * 0.45} ${h * 0.15} l-${w * 0.08} ${h * 0.4} l${w * 0.1} ${h * 0.43} l-${w * 0.4} -${h * 0.08} l-${w * 0.3} ${h * 0.1} l-${w * 0.3} -${h * 0.12} l${w * 0.07} -${h * 0.45}z" fill="#efe6d8" stroke="#3d3030" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+  const holes = [
+    !S.shards.clock && tear(214, 24, 60, 52),
+    !S.shards.tea && tear(30, 22, 58, 50),
+    !S.shards.cat && tear(188, 112, 70, 56),
+  ].filter(Boolean).join('');
+  const extra = full ? '<path d="M30 160 q120 -150 240 0" fill="none" stroke="#f4a6b8" stroke-width="8" opacity=".6"/><path d="M42 160 q108 -132 216 0" fill="none" stroke="#f2cc8f" stroke-width="8" opacity=".6"/><path d="M54 160 q96 -114 192 0" fill="none" stroke="#98c1d9" stroke-width="8" opacity=".6"/>' : '';
   return `<svg viewBox="0 0 300 210" class="photo">
     <defs><clipPath id="pc"><rect x="18" y="18" width="264" height="150" rx="6"/></clipPath></defs>
     <rect x="4" y="4" width="292" height="202" rx="10" fill="#fffaf1" stroke="#3d3030" stroke-width="4"/>
     <g clip-path="url(#pc)">
       <rect x="18" y="18" width="264" height="150" fill="#f6dcc0"/>
       <circle cx="244" cy="50" r="18" fill="#f2cc8f" stroke="#3d3030" stroke-width="3"/>
+      ${extra}
       <rect x="18" y="140" width="264" height="30" fill="#7fb7a4"/>
       <ellipse cx="92" cy="168" rx="40" ry="46" fill="#b56576" stroke="#3d3030" stroke-width="3"/>
       <circle cx="92" cy="94" r="24" fill="#fde3cf" stroke="#3d3030" stroke-width="3"/>
@@ -1842,16 +2277,18 @@ function photoSVG() {
       <circle cx="244" cy="138" r="15" fill="#f0a35e" stroke="#3d3030" stroke-width="3"/>
       <path d="M237 137 q3 -3 6 0 M247 137 q3 -3 6 0" fill="none" stroke="#3d3030" stroke-width="2.5" stroke-linecap="round"/>
       <text x="128" y="62" font-size="18">♥</text><text x="196" y="96" font-size="14">♪</text>
+      ${holes}
     </g>
     <rect x="18" y="18" width="264" height="150" rx="6" fill="none" stroke="#3d3030" stroke-width="3"/>
-    <text x="150" y="192" text-anchor="middle" font-size="14" font-weight="700" fill="#3d3030">我们 · 和团子</text>
+    <text x="150" y="192" text-anchor="middle" font-size="14" font-weight="700" fill="#3d3030">${full ? '全家福 · 永远在一起' : '我们 · 和团子'}</text>
   </svg>`;
 }
 function showEnding() {
-  const stars = S.hints === 0 ? '★★★' : S.hints <= 3 ? '★★☆' : '★☆☆';
+  const stars = S.hints === 0 ? '★★★' : S.hints <= 4 ? '★★☆' : '★☆☆';
+  const nShard = Object.values(S.shards).filter(Boolean).length, full = nShard === 3;
   const s = openModal(`
-    <h2>🎁 你找到了奶奶的礼物</h2>
-    ${photoSVG()}
+    <h2>${full ? '🌈 真结局 · 完整的照片' : '🎁 你找到了奶奶的礼物'}</h2>
+    ${photoSVG(full)}
     <div class="letter" style="font-size:14px">
       小家伙，你找到啦！<br>
       这首《小星星》，是你小时候每晚都要听着才肯睡的歌。<br>
@@ -1859,9 +2296,17 @@ function showEnding() {
       柜子和团子都交给你啦，要好好照顾它们哦。
       <div class="sign">—— 奶奶</div>
     </div>
+    ${full
+      ? `<div class="letter" style="font-size:14px;background:#fff4d6">
+          P.S. 你居然把撕掉的三块碎片都找回来了！<br>
+          那是我故意藏起来的：闹钟背后、茶杯底下、还有团子的肚皮下面。<br>
+          其实我没有去旅行——我就在门外，等你转过身来。🌈
+        </div>`
+      : `<p class="sub">照片上缺了三块……好像被人故意撕下来，藏在了柜子周围。（🧩 ${nShard}/3）</p>`}
     <div class="stats">
       <div>用时<b>${fmtTime(S.time)}</b></div>
       <div>使用提示<b>${S.hints} 次</b></div>
+      <div>碎片<b>🧩 ${nShard}/3</b></div>
       <div>评价<b style="color:#e0a21b">${stars}</b></div>
     </div>
     <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn primary" id="again">再玩一次</button></div>
@@ -1882,6 +2327,7 @@ $('#btnReset').addEventListener('click', () => {
  * 拾取 / 悬停 / 点击
  * ======================================================= */
 const raycaster = new THREE.Raycaster();
+raycaster.layers.enable(1);
 const ndc = new THREE.Vector2();
 const tipEl = $('#tip');
 const isShown = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
@@ -1891,6 +2337,16 @@ function pick(cx, cy) {
   const hit = raycaster.intersectObject(world, true).find(h => isShown(h.object));
   for (let o = hit?.object; o; o = o.parent) if (o.userData.info) return o;
   return null; // 被柜门等遮挡时不会穿透选中
+}
+// 手指比鼠标粗：正中点不中时，在周围一圈再找找
+function pickNear(cx, cy) {
+  const o = pick(cx, cy);
+  if (o) return o;
+  for (const r of [10, 20]) for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, h = pick(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    if (h) return h;
+  }
+  return null;
 }
 const tipText = info => (selected ? `对「${info.name}」使用 ${ITEMS[selected].icon}` : info.tip ? info.tip() : info.name);
 
@@ -1910,7 +2366,12 @@ function setHover(o) {
 let down = null;
 const el = renderer.domElement;
 el.style.cursor = 'grab';
-el.addEventListener('pointerdown', e => (down = { x: e.clientX, y: e.clientY }));
+const touches = new Set();
+el.addEventListener('pointerdown', e => {
+  touches.add(e.pointerId);
+  down = touches.size > 1 ? null : { x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse' };
+});
+el.addEventListener('pointercancel', e => { touches.delete(e.pointerId); down = null; });
 el.addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse') return;
   tipEl.style.left = e.clientX + 16 + 'px';
@@ -1920,11 +2381,13 @@ el.addEventListener('pointermove', e => {
 });
 el.addEventListener('pointerleave', () => setHover(null));
 el.addEventListener('pointerup', e => {
+  touches.delete(e.pointerId);
   if (!down) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+  const touch = down.touch;
   down = null;
-  if (moved > 6) return;
-  const o = pick(e.clientX, e.clientY);
+  if (moved > (touch ? 12 : 6)) return;
+  const o = touch ? pickNear(e.clientX, e.clientY) : pick(e.clientX, e.clientY);
   if (o) activate(o);
   else if (selected) select(null);
 });
@@ -1957,6 +2420,53 @@ btnSound.addEventListener('click', () => {
   if (muted) stopNoise();
 });
 
+/* ---------- 背景音乐：自动生成的摇篮曲 ---------- */
+const bgm = { on: localStorage.getItem('cabinet-bgm') !== 'off', gain: null, next: 0, step: 0, timer: null };
+const btnMusic = document.getElementById('btnMusic');
+const syncMusicBtn = () => (btnMusic.style.opacity = bgm.on ? 1 : 0.45);
+syncMusicBtn();
+const CHORDS = [[262, 330, 392], [220, 262, 330], [175, 220, 262], [196, 247, 294]]; // C Am F G
+const ARP = [0, 1, 2, 1, 0, 2, 1, 2];
+function startBgm() {
+  if (bgm.timer) return;
+  const a = audio();
+  bgm.gain = a.createGain();
+  bgm.gain.gain.value = 0;
+  bgm.gain.connect(a.destination);
+  bgm.next = a.currentTime + 0.1;
+  const STEP = 0.36;
+  const note = (f, t, dur, vol, type) => {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(bgm.gain);
+    o.start(t); o.stop(t + dur + 0.05);
+  };
+  bgm.timer = setInterval(() => {
+    const want = bgm.on && !muted && !music.on && !noise ? 1 : 0;
+    bgm.gain.gain.setTargetAtTime(want * 0.5, a.currentTime, 0.4);
+    if (bgm.next < a.currentTime) bgm.next = a.currentTime + 0.05; // 标签页切回来时不补播
+    while (bgm.next < a.currentTime + 0.5) {
+      const bar = Math.floor(bgm.step / 8) % 4, i = bgm.step % 8, ch = CHORDS[bar];
+      note(ch[ARP[i]] * 2, bgm.next, 0.9, 0.05, 'sine');
+      if (i === 0) note(ch[0] / 2, bgm.next, 2.6, 0.06, 'triangle');
+      if (i === 4 && Math.random() < 0.35) note(ch[2] * 4, bgm.next + 0.18, 0.5, 0.012, 'sine');
+      bgm.next += STEP;
+      bgm.step++;
+    }
+  }, 120);
+}
+addEventListener('pointerdown', () => startBgm(), { once: true });
+btnMusic.addEventListener('click', () => {
+  bgm.on = !bgm.on;
+  localStorage.setItem('cabinet-bgm', bgm.on ? 'on' : 'off');
+  syncMusicBtn();
+  startBgm();
+  showToast(bgm.on ? '🎵 背景音乐：开' : '🎵 背景音乐：关');
+});
+
 /* =========================================================
  * 读档：恢复场景状态
  * ======================================================= */
@@ -1969,6 +2479,11 @@ function applyState() {
   if (S.radioTuned) radioState.freq = FM_TARGET;
   if (S.catFed) { cat.position.x = CAT_X1; musicBox.visible = true; }
   if (S.boxOpen) boxLid.rotation.x = -1.9;
+  if (S.gotMagnet) magnet.visible = false;
+  if (S.gotYarn) yarn.userData.note.visible = false;
+  if (S.gotNoteB) mailPaper.visible = false;
+  if (S.shards.clock) clockShard.visible = false;
+  setTeaLevel(S.sips);
   updateHud();
   updateInv();
 }
@@ -1999,6 +2514,7 @@ setTimeout(() => {
 }, 1500);
 
 const clk = new THREE.Clock();
+let frameNo = 0;
 const headV = new THREE.Vector3();
 function loop() {
   const dt = Math.min(clk.getDelta(), 0.05);
@@ -2045,6 +2561,23 @@ function loop() {
     bubble.style.left = (headV.x * 0.5 + 0.5) * innerWidth + 'px';
     bubble.style.top = (-headV.y * 0.5 + 0.5) * innerHeight + 'px';
   }
+
+  // 视角谜题：镜头接近 VIEW_SPOT 时涂鸦逐渐发光
+  if (frameNo++ % 15 === 0) renderProjDepth();
+  doodleMat.uniforms.time.value = t;
+  if (!S.sawFreq) {
+    const a = tmpV.copy(camera.position).sub(TARGET), b = headV.copy(VIEW_SPOT).sub(TARGET);
+    const ang = a.angleTo(b), dr = Math.abs(a.length() - b.length());
+    doodleMat.uniforms.glow.value = ang < 0.35 ? (1 - ang / 0.35) * 0.6 : 0;
+    // 没拼好纸条：完全看不见；拼好后远离正确角度时只是淡淡的划痕
+    const near = 1 - THREE.MathUtils.smoothstep(ang, 0.12, 0.6);
+    const want = S.noteFull ? 0.12 + 0.88 * near : 0;
+    doodleMat.uniforms.alpha.value += (want - doodleMat.uniforms.alpha.value) * Math.min(1, dt * 4);
+    if (ang < 0.11 && dr < 1.6 && S.noteFull && !modal.classList.contains('show')) {
+      viewHold += dt;
+      if (viewHold > 0.5) sawDoodle();
+    } else viewHold = 0;
+  } else { doodleMat.uniforms.glow.value = 1; doodleMat.uniforms.alpha.value = 1; }
 
   controls.update();
   renderer.render(scene, camera);
