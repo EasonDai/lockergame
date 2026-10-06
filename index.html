@@ -2246,6 +2246,7 @@ function openComboModal() {
     msg.textContent = '';
   }));
   s.querySelector('#ok').onclick = () => {
+    if (combo.join('') === '2020' && !S.done) { closeModal(); secretEnding(); return; }
     if (combo.join('') === '7295') {
       setFlag('drawerUnlocked');
       closeModal();
@@ -2472,6 +2473,41 @@ function showEnding() {
     </div>
     ${scoreHTML(S.time, S.hints, PAR[1])}
     <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">再玩一次</button></div>
+    <div class="row"><button class="btn primary" id="next">✨ 第二章：爷爷的书桌 →</button></div>
+  `);
+  s.querySelector('#stay').onclick = closeModal;
+  s.querySelector('#again').onclick = restart;
+  s.querySelector('#next').onclick = enterCh2;
+  updateHud();
+}
+/* ---------- 隐藏结局：抽屉密码 2020 ---------- */
+function secretEnding() {
+  S.done = true; S.secretEnd = true; save();
+  sfx.click();
+  tween(0.5, (_, p) => (comboLock.rotation.z = Math.sin(p * Math.PI * 4) * 0.25 * (1 - p)), { ease: ease.linear });
+  sfx.sparkle();
+  chime([523, 784, 659, 1046, 784, 1318], 0.14);
+  for (let i = 0; i < 14; i++) setTimeout(() => spawnText(i % 3 ? '✦' : '🔓', '#f2c14e', worldPos(comboLock, 0.3), { size: 0.18, rise: 0.9, drift: 1 }), i * 90);
+  setTimeout(() => say('咔嗒！？', '锁没有开，却「叮」地一声，从锁底下弹出一张卷得很小的纸条……', '隐藏'), 600);
+  setTimeout(showSecretEnding, 2600);
+}
+function showSecretEnding() {
+  const s = openModal(`
+    <h2>🔓 隐藏结局 · 奶奶的万能钥匙</h2>
+    <div class="letter" style="font-size:14px">
+      哎呀，被你发现啦！<br>
+      2020 是奶奶的「万能密码」——奶奶年纪大了，怕自己忘记，所以每把锁都偷偷留了这个后门。<br>
+      不过呀，这样一来，闹钟、收音机、八音盒……你都还没玩过呢。<br>
+      礼物先算你拿到了，有空的话，从头再来一次吧？
+      <div class="sign">—— 奶奶（偷笑）</div>
+    </div>
+    <div class="stats">
+      <div>用时<b>${fmtTime(S.time)}</b></div>
+      <div>使用提示<b>${S.hints}/${HINT_MAX} 次</b></div>
+      <div>结局<b>🔓 隐藏</b></div>
+    </div>
+    <p class="sub">隐藏结局不参与评分。</p>
+    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">从头好好玩一次</button></div>
     <div class="row"><button class="btn primary" id="next">✨ 第二章：爷爷的书桌 →</button></div>
   `);
   s.querySelector('#stay').onclick = closeModal;
