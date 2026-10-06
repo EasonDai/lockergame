@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>奶奶的柜子 · 3D 解谜小游戏</title>
+<style>
+  :root {
+    --ink: #3d3030;
+    --bg: #f4ead8;
+    --paper: #fffaf1;
+    --accent: #e07a5f;
+    --mint: #7fb7a4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    background: radial-gradient(ellipse at 50% 40%, #fdf6ea 0%, #f4ead8 55%, #ebdcc3 100%);
+  }
+  canvas { position: fixed; inset: 0; display: block; outline: none; z-index: 1; touch-action: none; }
+  button { font: inherit; color: var(--ink); }
+
+  /* 背景装饰 */
+  .deco { position: fixed; pointer-events: none; z-index: 0; border-radius: 50%; }
+  .sun { width: 46vmin; height: 46vmin; left: 50%; top: 46%; transform: translate(-50%, -50%); background: #f6dcc0; }
+  .dot1 { width: 70px; height: 70px; right: 12%; top: 20%; background: #f2cc8f; border: 2.5px solid var(--ink); }
+  .dot2 { width: 22px; height: 22px; right: 20%; top: 32%; background: #98c1d9; border: 2.5px solid var(--ink); }
+  .dot3 { width: 34px; height: 34px; left: 9%; bottom: 18%; background: #f4a6b8; border: 2.5px solid var(--ink); }
+  .cloud { position: fixed; pointer-events: none; z-index: 0; left: 8%; top: 22%; width: 120px; height: 36px;
+    background: var(--paper); border: 2.5px solid var(--ink); border-radius: 30px; }
+  .cloud::before { content: ""; position: absolute; width: 52px; height: 52px; left: 22px; top: -30px;
+    background: var(--paper); border: 2.5px solid var(--ink); border-bottom-color: transparent; border-radius: 50%; }
+
+  /* UI */
+  .ui { position: fixed; z-index: 2; }
+  .title { left: 32px; top: 28px; pointer-events: none; }
+  .title h1 { font-size: 32px; letter-spacing: 4px; font-weight: 800; }
+  .title h1 span { display: inline-block; background: var(--accent); color: var(--paper); padding: 0 10px; margin-left: 6px;
+    border: 2.5px solid var(--ink); border-radius: 10px; transform: rotate(-4deg); font-size: 18px; vertical-align: middle; }
+  .title p { margin-top: 8px; font-size: 14px; opacity: .75; letter-spacing: 1px; }
+
+  .pill { background: var(--paper); border: 2.5px solid var(--ink); border-radius: 999px; box-shadow: 3px 3px 0 var(--ink); }
+  .hud { right: 26px; top: 26px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  .hudrow { display: flex; gap: 10px; align-items: center; }
+  .progress { display: flex; gap: 4px; padding: 6px 12px; }
+  .progress span { font-size: 18px; opacity: .22; filter: grayscale(1); transition: opacity .4s, filter .4s, transform .4s; }
+  .progress span.on { opacity: 1; filter: none; }
+  .timer { padding: 7px 14px; font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .toolbar { display: flex; gap: 10px; }
+  .btn { font-size: 14px; font-weight: 700; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 999px;
+    padding: 8px 16px; cursor: pointer; white-space: nowrap; box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s, background .2s; }
+  .btn:hover { background: #fde8d7; }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+  .btn.primary { background: var(--accent); color: var(--paper); }
+  .btn.primary:hover { background: #e98a70; }
+  .btn:disabled { opacity: .45; pointer-events: none; }
+
+  #tip { position: fixed; z-index: 3; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 13px;
+    padding: 5px 10px; border-radius: 8px; opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; white-space: nowrap; }
+  #tip.show { opacity: 1; transform: translateY(0); }
+
+  #card { left: 32px; bottom: 26px; width: 300px; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 16px;
+    padding: 14px 16px 16px; box-shadow: 4px 4px 0 var(--ink); opacity: 0; transform: translateY(16px) rotate(-1deg);
+    transition: opacity .25s, transform .3s cubic-bezier(.3,1.6,.5,1); pointer-events: none; }
+  #card.show { opacity: 1; transform: translateY(0) rotate(-1deg); }
+  #card .tag { display: inline-block; font-size: 11px; font-weight: 700; background: var(--mint); color: var(--paper);
+    border: 2px solid var(--ink); border-radius: 6px; padding: 1px 7px; margin-bottom: 6px; }
+  #card .tag.hint { background: #f2c14e; color: var(--ink); }
+  #card h3 { font-size: 17px; margin-bottom: 4px; }
+  #card p { font-size: 13.5px; line-height: 1.65; opacity: .88; }
+
+  #bubble { position: fixed; z-index: 3; pointer-events: none; background: var(--paper); border: 2.5px solid var(--ink);
+    border-radius: 14px; padding: 4px 12px; font-weight: 800; font-size: 16px; transform: translate(-50%, -100%) scale(0);
+    transform-origin: 50% 120%; transition: transform .25s cubic-bezier(.3,1.8,.5,1); white-space: nowrap; }
+  #bubble.show { transform: translate(-50%, -100%) scale(1); }
+  #bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 12px; height: 12px; background: var(--paper);
+    border-right: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
+
+  #toast { left: 50%; top: 26px; transform: translate(-50%, -20px); background: var(--accent); color: var(--paper);
+    border: 2.5px solid var(--ink); border-radius: 14px; padding: 10px 20px; font-weight: 800; box-shadow: 4px 4px 0 var(--ink);
+    opacity: 0; transition: opacity .3s, transform .4s cubic-bezier(.3,1.6,.5,1); pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* 背包 */
+  #inv { left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center;
+    background: var(--paper); border: 2.5px solid var(--ink); border-radius: 18px; padding: 8px 12px; box-shadow: 4px 4px 0 var(--ink); }
+  #inv .lbl { font-size: 12px; font-weight: 800; writing-mode: vertical-rl; letter-spacing: 2px; opacity: .6; }
+  .slot { width: 52px; height: 52px; border: 2.5px solid var(--ink); border-radius: 12px; background: #fff; font-size: 27px;
+    display: grid; place-items: center; cursor: pointer; transition: transform .15s, background .2s, box-shadow .15s; position: relative; }
+  .slot:hover { transform: translateY(-3px); }
+  .slot.sel { background: #fde8d7; border-color: var(--accent); box-shadow: 0 0 0 3px #f7c3b3; transform: translateY(-5px); }
+  .slot.empty { border-style: dashed; opacity: .35; cursor: default; background: transparent; }
+  .slot.empty:hover { transform: none; }
+  .slot .nm { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700;
+    white-space: nowrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+  .slot:hover .nm, .slot.sel .nm { opacity: .8; }
+  #cursorItem { position: fixed; z-index: 4; pointer-events: none; font-size: 30px; transform: translate(6px, 6px); display: none;
+    filter: drop-shadow(2px 2px 0 var(--paper)); }
+
+  /* 弹窗 */
+  #modal { position: fixed; inset: 0; z-index: 6; background: rgba(61, 48, 48, .38); display: grid; place-items: center;
+    opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #modal.show { opacity: 1; pointer-events: auto; }
+  #sheet { position: relative; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 22px; box-shadow: 6px 6px 0 var(--ink);
+    padding: 22px 24px 22px; width: min(440px, 92vw); max-height: 92vh; overflow: auto; text-align: center;
+    transform: scale(.9) rotate(-1deg); transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+  #modal.show #sheet { transform: scale(1) rotate(0); }
+  #sheet h2 { font-size: 20px; margin-bottom: 6px; letter-spacing: 1px; }
+  #sheet .sub { font-size: 13px; opacity: .7; margin-bottom: 14px; line-height: 1.6; }
+  #sheet .x { position: absolute; right: 12px; top: 10px; width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid var(--ink);
+    background: var(--paper); cursor: pointer; font-weight: 800; }
+  #sheet .x:hover { background: #fde8d7; }
+  #sheet .msg { min-height: 22px; margin-top: 10px; font-size: 13.5px; font-weight: 700; color: var(--accent); }
+  #sheet .row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .shake { animation: shake .45s; }
+  @keyframes shake { 0%,100% { translate: 0 } 20% { translate: -10px } 40% { translate: 9px } 60% { translate: -6px } 80% { translate: 4px } }
+  @keyframes pop { 0% { transform: scale(1) } 40% { transform: scale(1.35) } 100% { transform: scale(1) } }
+
+  .letter { text-align: left; background: repeating-linear-gradient(#fffaf1 0 29px, #ecdcc4 29px 30px); border: 2px dashed #d8c3a3;
+    border-radius: 12px; padding: 14px 18px; line-height: 30px; font-size: 15px; margin: 10px 0 6px; }
+  .letter .sign { text-align: right; }
+  .letter em { font-style: normal; background: #fde8d7; border-radius: 4px; padding: 0 3px; }
+
+  .clockface { width: 230px; height: 230px; display: block; margin: 4px auto 6px; }
+  .ctrl { display: grid; grid-template-columns: auto auto auto; gap: 8px 10px; align-items: center; justify-content: center; margin-top: 4px; }
+  .ctrl span { font-weight: 800; font-size: 14px; }
+  .ctrl .btn { padding: 6px 14px; }
+
+  .shelfsvg { width: 100%; max-width: 380px; display: block; margin: 4px auto; }
+  .shelfsvg .spine { cursor: pointer; }
+  .shelfsvg .spine:hover rect.cv { stroke: var(--accent); }
+  .bookinfo { min-height: 64px; font-size: 13.5px; line-height: 1.7; background: #f6eddd; border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+  .bookinfo b { display: block; }
+
+  .wheels { display: flex; justify-content: center; gap: 10px; margin: 8px 0 14px; }
+  .wheel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .wheel button { width: 46px; height: 30px; border: 2.5px solid var(--ink); border-radius: 10px; background: #fff; cursor: pointer; font-size: 12px; }
+  .wheel button:hover { background: #fde8d7; }
+  .wheel .num { width: 54px; height: 64px; border: 2.5px solid var(--ink); border-radius: 12px; background: #3d5a80; color: #fff;
+    font-size: 34px; font-weight: 800; display: grid; place-items: center; box-shadow: inset 0 -8px 0 rgba(0,0,0,.18); font-variant-numeric: tabular-nums; }
+
+  .radio { background: #f2cc8f; border: 2.5px solid var(--ink); border-radius: 16px; padding: 12px 16px; margin: 6px 0 12px; }
+  .radio .fq { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+  .radio .fq small { font-size: 14px; margin-left: 4px; }
+  .bars { display: flex; gap: 4px; justify-content: center; align-items: flex-end; height: 26px; margin-top: 4px; }
+  .bars i { width: 9px; border: 2px solid var(--ink); border-radius: 3px; background: #fff; transition: background .15s; }
+  .bars i.on { background: #81b29a; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 28px; cursor: pointer; }
+  .scale { display: flex; justify-content: space-between; font-size: 11px; opacity: .6; margin-top: -2px; }
+  .broadcast { min-height: 48px; margin-top: 12px; font-size: 14px; line-height: 1.7; font-weight: 700; }
+  .notes { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .notes i { width: 18px; height: 18px; border: 2.5px solid var(--ink); border-radius: 50%; opacity: .18; transition: opacity .15s; }
+  .notes i.long { width: 30px; border-radius: 10px; }
+  .notes i.gap { margin-right: 10px; }
+  .notes i.on { opacity: 1; animation: pop .3s; }
+
+  .slots7 { display: flex; gap: 6px; justify-content: center; margin: 4px 0 16px; }
+  .slots7 i { width: 30px; height: 30px; border: 2.5px dashed var(--ink); border-radius: 50%; opacity: .5; }
+  .slots7 i.f { border-style: solid; opacity: 1; animation: pop .25s; }
+  .xylo { display: flex; gap: 6px; justify-content: center; align-items: center; }
+  .xylo button { width: 46px; border: 2.5px solid var(--ink); border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 12px;
+    color: var(--ink); box-shadow: 3px 3px 0 var(--ink); transition: transform .08s, box-shadow .08s; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; }
+  .xylo button:active, .xylo button.hit { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+
+  .photo { width: 100%; max-width: 330px; display: block; margin: 6px auto 4px; transform: rotate(-2deg); }
+  .stats { display: flex; justify-content: center; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; }
+  .stats div { background: #f6eddd; border: 2px solid var(--ink); border-radius: 12px; padding: 6px 12px; font-size: 13px; }
+  .stats b { display: block; font-size: 17px; }
+
+  #loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; font-weight: 700; letter-spacing: 2px;
+    background: var(--bg); transition: opacity .5s; }
+  #loading.hide { opacity: 0; pointer-events: none; }
+
+  @media (max-width: 640px) {
+    .title { left: 16px; top: 16px; }
+    .title h1 { font-size: 22px; letter-spacing: 2px; }
+    .title h1 span { font-size: 14px; padding: 0 7px; }
+    .title p { display: none; }
+    .hud { right: 12px; top: 14px; gap: 8px; }
+    .hudrow { flex-direction: column-reverse; align-items: flex-end; gap: 8px; }
+    .progress { padding: 4px 8px; }
+    .progress span { font-size: 15px; }
+    .toolbar { gap: 6px; }
+    .btn { padding: 6px 10px; font-size: 13px; }
+    .toolbar .t { display: none; }
+    #card { left: 50%; bottom: 100px; width: calc(100vw - 32px); transform: translate(-50%, 16px); }
+    #card.show { transform: translate(-50%, 0); }
+    #inv { bottom: 16px; }
+    .slot { width: 46px; height: 46px; font-size: 23px; }
+    #toast { top: auto; bottom: 170px; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+  <div class="deco sun"></div>
+  <div class="deco dot1"></div>
+  <div class="deco dot2"></div>
+  <div class="deco dot3"></div>
+  <div class="cloud"></div>
+
+  <header class="ui title">
+    <h1>奶奶的柜子<span>解谜</span></h1>
+    <p>拖动旋转 · 滚轮缩放 · 点击调查 · 选中道具再点目标来使用</p>
+  </header>
+  <div class="ui hud">
+    <div class="hudrow">
+      <div class="pill progress" id="progress"></div>
+      <div class="pill timer">⏱ <span id="time">00:00</span></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="btnHint">💡<span class="t"> 提示</span></button>
+      <button class="btn" id="btnView">🎯<span class="t"> 视角</span></button>
+      <button class="btn" id="btnSound">🔊<span class="t"> 声音</span></button>
+      <button class="btn" id="btnReset">↻<span class="t"> 重来</span></button>
+    </div>
+  </div>
+  <div id="tip"></div>
+  <div class="ui" id="card"><div class="tag"></div><h3></h3><p></p></div>
+  <div id="bubble">喵～</div>
+  <div class="ui" id="toast"></div>
+  <div class="ui" id="inv"></div>
+  <div id="cursorItem"></div>
+  <div id="modal"><div id="sheet"></div></div>
+  <div id="loading">柜子搬运中…</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* =========================================================
+ * 基础场景
+ * ======================================================= */
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100);
+const HOME = new THREE.Vector3(3.2, 5.9, 11.2);
+const TARGET = new THREE.Vector3(0, 1.85, 0.2);
+camera.position.copy(HOME);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 4.5;
+controls.maxDistance = 17;
+controls.minPolarAngle = 0.25;
+controls.maxPolarAngle = Math.PI / 2 - 0.04;
+
+scene.add(new THREE.HemisphereLight('#fff6e8', '#d9c3a5', 2.1));
+const sun = new THREE.DirectionalLight('#fff3df', 2.3);
+sun.position.set(4, 9, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 6, bottom: -4, near: 1, far: 25 });
+sun.shadow.bias = -0.0005;
+sun.shadow.normalBias = 0.03;
+scene.add(sun);
+
+/* =========================================================
+ * 插画风材质：三阶色调 + 描边
+ * ======================================================= */
+const gradient = new THREE.DataTexture(new Uint8Array([0, 0, 170, 255]), 4, 1, THREE.RedFormat); // 背光面为 0，避免灯光透过柜门
+gradient.minFilter = gradient.magFilter = THREE.NearestFilter;
+gradient.needsUpdate = true;
+
+const matCache = {};
+function mat(color, unique = false, extra = {}) {
+  if (!unique && matCache[color]) return matCache[color];
+  const m = new THREE.MeshToonMaterial({ color, gradientMap: gradient, ...extra });
+  if (!unique) matCache[color] = m;
+  return m;
+}
+
+const INK = '#3d3030';
+const HILITE = '#ff6b4a';
+const LINE = 0.016, LINE_HOVER = 0.03;
+const outlineMat = new THREE.ShaderMaterial({
+  uniforms: { thickness: { value: LINE }, color: { value: new THREE.Color(INK) } },
+  vertexShader: /* glsl */`
+    uniform float thickness;
+    void main() {
+      vec3 p = position + normal * thickness;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }`,
+  fragmentShader: /* glsl */`
+    uniform vec3 color;
+    void main() {
+      gl_FragColor = vec4(color, 1.0);
+      #include <colorspace_fragment>
+    }`,
+  side: THREE.BackSide,
+});
+
+// 描边用平滑法线（合并顶点），避免盒子/圆柱边角处描边断开
+const outlineGeoCache = new WeakMap();
+function outlineGeo(geo) {
+  let g = outlineGeoCache.get(geo);
+  if (!g) {
+    g = geo.clone();
+    for (const k of Object.keys(g.attributes)) if (k !== 'position') g.deleteAttribute(k);
+    g = mergeVertices(g);
+    g.computeVertexNormals();
+    outlineGeoCache.set(geo, g);
+  }
+  return g;
+}
+
+function M(geo, color, { outline = true, shadow = true, material } = {}) {
+  const mesh = new THREE.Mesh(geo, material || mat(color));
+  mesh.castShadow = shadow;
+  mesh.receiveShadow = true;
+  if (outline) {
+    const o = new THREE.Mesh(outlineGeo(geo), outlineMat);
+    o.userData.isOutline = true;
+    o.raycast = () => {};
+    mesh.add(o);
+  }
+  return mesh;
+}
+function place(parent, obj, x = 0, y = 0, z = 0) {
+  obj.position.set(x, y, z);
+  parent.add(obj);
+  return obj;
+}
+const rbox = (w, h, d, r = 0.03) => new RoundedBoxGeometry(w, h, d, 3, Math.min(r, Math.min(w, h, d) / 2 - 0.002));
+const cyl = (rt, rb, h, s = 24) => new THREE.CylinderGeometry(rt, rb, h, s);
+const sph = (r, ws = 20, hs = 14) => new THREE.SphereGeometry(r, ws, hs);
+
+/* =========================================================
+ * 补间动画
+ * ======================================================= */
+const ease = {
+  linear: t => t,
+  inOut: t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  out: t => 1 - Math.pow(1 - t, 3),
+  back: t => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  bounce: t => {
+    const n1 = 7.5625, d1 = 2.75;
+    if (t < 1 / d1) return n1 * t * t;
+    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+    return n1 * (t -= 2.625 / d1) * t + 0.984375;
+  },
+};
+let tweens = [];
+function tween(duration, onUpdate, { ease: e = ease.inOut, delay = 0, id, onDone } = {}) {
+  if (id) tweens = tweens.filter(t => t.id !== id);
+  const tw = { t: -delay, duration, onUpdate, e, id, onDone };
+  tweens.push(tw);
+  return tw;
+}
+function sequence(steps, done) {
+  let i = 0;
+  const next = () => {
+    if (i >= steps.length) return done?.();
+    const s = steps[i++];
+    tween(s.d, s.f || (() => {}), { ease: s.e || ease.inOut, delay: s.delay || 0, onDone: next });
+  };
+  next();
+}
+function updateTweens(dt) {
+  for (const tw of [...tweens]) {
+    if (!tweens.includes(tw)) continue;
+    tw.t += dt;
+    if (tw.t < 0) continue;
+    const p = Math.min(tw.t / tw.duration, 1);
+    tw.onUpdate(tw.e(p), p);
+    if (p >= 1) {
+      const i = tweens.indexOf(tw);
+      if (i >= 0) tweens.splice(i, 1);
+      tw.onDone?.();
+    }
+  }
+}
+
+/* =========================================================
+ * 特效：音符 / Zzz / 蒸汽（带描边的小贴片）
+ * ======================================================= */
+const fxs = [];
+function addFx(obj, life, update) { obj.raycast = () => {}; scene.add(obj); fxs.push({ obj, life, age: 0, update }); }
+function updateFx(dt) {
+  for (let i = fxs.length - 1; i >= 0; i--) {
+    const f = fxs[i];
+    f.age += dt;
+    const p = Math.min(f.age / f.life, 1);
+    f.update(p, f.obj);
+    if (p >= 1) { scene.remove(f.obj); f.obj.material.dispose(); fxs.splice(i, 1); }
+  }
+}
+const texCache = {};
+function canvasTex(key, draw) {
+  if (texCache[key]) return texCache[key];
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  draw(c.getContext('2d'));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return (texCache[key] = t);
+}
+const textTex = (ch, color) => canvasTex('t' + ch + color, ctx => {
+  ctx.font = 'bold 92px "PingFang SC", "Hiragino Sans GB", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 12; ctx.lineJoin = 'round'; ctx.strokeStyle = INK;
+  ctx.strokeText(ch, 64, 68); ctx.fillStyle = color; ctx.fillText(ch, 64, 68);
+});
+const puffTex = () => canvasTex('puff', ctx => {
+  ctx.beginPath(); ctx.arc(64, 64, 52, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = 8; ctx.strokeStyle = INK; ctx.stroke();
+});
+const fade = p => (p < 0.15 ? p / 0.15 : 1 - Math.max(0, (p - 0.55) / 0.45));
+
+function spawnText(ch, color, pos, { size = 0.26, rise = 0.9, drift = 0.4, life = 1.7 } = {}) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTex(ch, color), transparent: true, depthWrite: false }));
+  const start = pos.clone(), dx = (Math.random() - 0.5) * drift, ph = Math.random() * 6;
+  sp.position.copy(start);
+  addFx(sp, life, (p, o) => {
+    o.position.set(start.x + dx * p + Math.sin(p * 7 + ph) * 0.05, start.y + rise * ease.out(p), start.z);
+    o.material.opacity = fade(p);
+    o.material.rotation = Math.sin(p * 6 + ph) * 0.3;
+    o.scale.setScalar(size * (0.5 + 0.5 * Math.min(1, p * 5)));
+  });
+}
+function spawnPuff(pos, delay = 0) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex(), transparent: true, depthWrite: false, opacity: 0 }));
+  const start = pos.clone(), dx = (Math.random() - 0.5) * 0.15;
+  sp.position.copy(start); sp.scale.setScalar(0.001);
+  setTimeout(() => addFx(sp, 1.6, (p, o) => {
+    o.position.set(start.x + dx * p + Math.sin(p * 8) * 0.03, start.y + 0.65 * ease.out(p), start.z);
+    o.material.opacity = fade(p) * 0.95;
+    o.scale.setScalar(0.06 + 0.14 * p);
+  }), delay * 1000);
+}
+
+/* =========================================================
+ * 声音（WebAudio 合成，无需外部文件）
+ * ======================================================= */
+let actx = null, muted = false;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur = 0.2, { type = 'sine', vol = 0.15, when = 0, slideTo } = {}) {
+  if (muted) return;
+  const a = audio(), t = a.currentTime + Math.max(0, when);
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function meow() {
+  if (muted) return;
+  const a = audio(), t = a.currentTime;
+  const o = a.createOscillator(), f = a.createBiquadFilter(), g = a.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(520, t);
+  o.frequency.exponentialRampToValueAtTime(900, t + 0.18);
+  o.frequency.exponentialRampToValueAtTime(470, t + 0.6);
+  f.type = 'bandpass'; f.Q.value = 3;
+  f.frequency.setValueAtTime(1200, t);
+  f.frequency.linearRampToValueAtTime(1900, t + 0.2);
+  f.frequency.linearRampToValueAtTime(900, t + 0.6);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.3, t + 0.06);
+  g.gain.setValueAtTime(0.3, t + 0.35);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+  o.connect(f).connect(g).connect(a.destination);
+  o.start(t); o.stop(t + 0.7);
+}
+const sfx = {
+  door: open => { tone(open ? 220 : 160, 0.12, { type: 'triangle', vol: 0.18 }); tone(open ? 330 : 120, 0.1, { type: 'triangle', vol: 0.1, when: 0.06 }); },
+  drawer: open => tone(open ? 140 : 220, 0.35, { type: 'triangle', vol: 0.12, slideTo: open ? 220 : 120 }),
+  pop: () => tone(500, 0.15, { type: 'sine', vol: 0.2, slideTo: 1100 }),
+  sparkle: () => [784, 988, 1318].forEach((f, i) => tone(f, 0.25, { type: 'sine', vol: 0.1, when: i * 0.07 })),
+  click: () => tone(1200, 0.05, { type: 'square', vol: 0.04 }),
+  whoosh: () => tone(300, 0.3, { type: 'sine', vol: 0.12, slideTo: 700 }),
+};
+
+/* =========================================================
+ * 交互注册
+ * ======================================================= */
+const interactives = [];
+function register(obj, info) {
+  obj.userData.info = info;
+  info.outlines = [];
+  obj.traverse(c => {
+    if (c.userData.isOutline && !c.userData.claimed) {
+      c.material = c.material.clone(); // 每个可交互物体独立描边，用于悬停高亮
+      c.userData.claimed = true;
+      info.outlines.push(c.material);
+    }
+  });
+  interactives.push(obj);
+}
+
+/* =========================================================
+ * 世界：地面 + 地毯 + 柜子
+ * ======================================================= */
+const world = new THREE.Group();
+scene.add(world);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ color: '#7a5c45', opacity: 0.2 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+world.add(ground);
+
+const rugGeo = cyl(1, 1, 0.03, 64); rugGeo.scale(2.7, 1, 1.45);
+place(world, M(rugGeo, '#e9b8a0', { shadow: false }), 0, 0.015, 0.7);
+const rugGeo2 = cyl(1, 1, 0.03, 64); rugGeo2.scale(2.3, 1, 1.12);
+place(world, M(rugGeo2, '#f6e3cf', { shadow: false }), 0, 0.03, 0.7);
+
+const C = { body: '#7fb7a4', trim: '#6aa391', inner: '#f6eddd', shelf: '#efe0c6', knob: '#f2c14e', leg: '#5b4636' };
+const W = 3.2, H = 3.4, D = 1.5, T = 0.1, LEG = 0.32;
+const y0 = LEG;
+const LOWER = y0 + 1.0;   // 下层隔板上表面
+const UPPER = y0 + 2.24;  // 上层隔板上表面
+const TOP = y0 + H + 0.16; // 柜顶
+
+const cab = new THREE.Group();
+world.add(cab);
+
+// 柜体
+place(cab, M(rbox(T, H, D), C.body), -W / 2 + T / 2, y0 + H / 2, 0);
+place(cab, M(rbox(T, H, D), C.body), W / 2 - T / 2, y0 + H / 2, 0);
+place(cab, M(rbox(W - 2 * T, H - T, T), C.inner), 0, y0 + T + (H - T) / 2, -D / 2 + T / 2);
+place(cab, M(rbox(W - 2 * T, T, D), C.body), 0, y0 + T / 2, 0);
+place(cab, M(rbox(W + 0.24, 0.16, D + 0.2, 0.05), C.trim), 0, y0 + H + 0.08, 0.02);
+place(cab, M(rbox(W - 2 * T, T, D - T), C.shelf), 0, y0 + 0.95, T / 2);
+place(cab, M(rbox(W - 2 * T, 0.08, D - T - 0.04), C.shelf), 0, y0 + 2.2, T / 2 - 0.02);
+for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+  place(cab, M(cyl(0.075, 0.05, LEG, 14), C.leg), sx * (W / 2 - 0.22), LEG / 2, sz * (D / 2 - 0.2));
+}
+
+// 柜内小灯（开门时亮起，像冰箱灯一样）
+const cabLight = new THREE.PointLight('#fff1d6', 0, 4.5, 1.2);
+cabLight.position.set(0, y0 + 2.9, 0.6);
+cab.add(cabLight);
+
+/* =========================================================
+ * 存档 / 游戏状态
+ * ======================================================= */
+const SAVE_KEY = 'cabinet-puzzle-v1';
+const S = {
+  introSeen: false, gotKey: false, doorsUnlocked: false, gotBulb: false, lampFixed: false, drawerUnlocked: false,
+  radioTuned: false, gotFish: false, catFed: false, boxOpen: false, done: false, hints: 0, time: 0, hintLv: {},
+};
+try { Object.assign(S, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch {}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch {} }
+function setFlag(k) { S[k] = true; save(); updateHud(); updateInv(); }
+
+const $ = s => document.querySelector(s);
+const tmpV = new THREE.Vector3();
+const worldPos = (obj, dy = 0) => obj.getWorldPosition(new THREE.Vector3()).add(tmpV.set(0, dy, 0));
+
+/* ---------- 旁白卡片 ---------- */
+const card = $('#card');
+let cardTimer;
+function say(title, text, tag = '') {
+  const tg = card.querySelector('.tag');
+  tg.textContent = tag;
+  tg.style.display = tag ? 'inline-block' : 'none';
+  tg.classList.toggle('hint', tag.startsWith('提示'));
+  card.querySelector('h3').textContent = title;
+  card.querySelector('p').textContent = text;
+  card.classList.remove('show');
+  void card.offsetWidth;
+  card.classList.add('show');
+  clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => card.classList.remove('show'), 3200 + text.length * 70);
+}
+const toast = $('#toast');
+let toastTimer;
+function showToast(html) {
+  toast.innerHTML = html;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+/* =========================================================
+ * 柜门 + 小铜锁
+ * ======================================================= */
+const DOOR_H = H - 0.94;
+const KNOB_Y = y0 + 0.92 + DOOR_H / 2 - 0.1;
+const doors = [];
+function makeDoor(side) { // side: -1 左, 1 右
+  const pivot = new THREE.Group();
+  pivot.position.set(side * W / 2, y0 + 0.92 + DOOR_H / 2, D / 2 + 0.04);
+  const dw = W / 2 - 0.03;
+  place(pivot, M(rbox(dw, DOOR_H, 0.08), C.body), -side * dw / 2, 0, 0);
+  place(pivot, M(rbox(dw - 0.36, DOOR_H - 0.42, 0.03, 0.012), C.trim), -side * dw / 2, 0, 0.05);
+  const win = cyl(0.17, 0.17, 0.02, 32); win.rotateX(Math.PI / 2);
+  place(pivot, M(win, '#f6eddd'), -side * dw / 2, DOOR_H * 0.25, 0.075);
+  const win2 = cyl(0.08, 0.08, 0.02, 24); win2.rotateX(Math.PI / 2);
+  place(pivot, M(win2, side < 0 ? '#f2cc8f' : '#f4a6b8'), -side * dw / 2, DOOR_H * 0.25, 0.088);
+  const stem = cyl(0.025, 0.025, 0.07, 10); stem.rotateX(Math.PI / 2);
+  place(pivot, M(stem, C.knob), -side * (dw - 0.18), -0.1, 0.075);
+  place(pivot, M(sph(0.075), C.knob), -side * (dw - 0.18), -0.1, 0.13);
+  pivot.userData = { side, open: false };
+  cab.add(pivot);
+  register(pivot, {
+    name: side < 0 ? '左柜门' : '右柜门',
+    tip: () => (!S.doorsUnlocked ? '上了锁的柜门' : pivot.userData.open ? '点击关上柜门' : '点击打开柜门'),
+    onClick: () => {
+      if (!S.doorsUnlocked) return lockedDoor();
+      setDoor(pivot, !pivot.userData.open);
+      return true;
+    },
+    onUse: useKey,
+  });
+  doors.push(pivot);
+}
+makeDoor(-1); makeDoor(1);
+
+const padlock = new THREE.Group();
+padlock.position.set(0, KNOB_Y, D / 2 + 0.2);
+cab.add(padlock);
+const lockBody = new THREE.Group();
+const shackle = new THREE.Group();
+{
+  place(padlock, M(rbox(0.6, 0.05, 0.04, 0.015), '#8a5a3c'), 0, 0, 0);
+  padlock.add(lockBody);
+  lockBody.position.set(0, 0, 0.03);
+  lockBody.add(shackle);
+  place(shackle, M(new THREE.TorusGeometry(0.065, 0.017, 8, 20, Math.PI), '#b9b4ad'), 0, -0.07, 0);
+  for (const s of [-1, 1]) place(shackle, M(cyl(0.017, 0.017, 0.06, 8), '#b9b4ad'), s * 0.065, -0.1, 0);
+  place(lockBody, M(rbox(0.2, 0.17, 0.08, 0.035), '#f2c14e'), 0, -0.19, 0);
+  const kh = cyl(0.018, 0.018, 0.02, 12); kh.rotateX(Math.PI / 2);
+  place(lockBody, M(kh, INK, { outline: false }), 0, -0.18, 0.042);
+  place(lockBody, M(rbox(0.012, 0.04, 0.01, 0.004), INK, { outline: false }), 0, -0.21, 0.042);
+}
+register(padlock, { name: '小铜锁', tip: () => '一把小铜锁', onClick: () => lockedDoor(), onUse: useKey });
+
+function lockedDoor() {
+  tween(0.5, (_, p) => (lockBody.rotation.z = Math.sin(p * Math.PI * 6) * 0.25 * (1 - p)), { ease: ease.linear, id: 'lockshake' });
+  tone(150, 0.08, { type: 'square', vol: 0.06 }); tone(130, 0.08, { type: 'square', vol: 0.06, when: 0.1 });
+  say('上锁的柜门', '咔哒咔哒……两扇门被一把小铜锁扣在一起了。得先找到钥匙。');
+  return true;
+}
+function useKey(item) {
+  if (item !== 'key') return false;
+  setFlag('doorsUnlocked');
+  sfx.click();
+  sequence([
+    { d: 0.25, e: ease.back, f: p => { lockBody.rotation.z = 0; shackle.position.y = 0.07 * p; } },
+    { d: 0.15, f: () => {} },
+    { d: 0.7, e: ease.linear, f: (_, p) => {
+      lockBody.position.set(0, -(KNOB_Y - 0.1) * p * p, 0.03 + 0.5 * p);
+      lockBody.rotation.set(p * 2.5, 0, p * 1.2);
+    } },
+  ], () => {
+    tone(260, 0.1, { type: 'triangle', vol: 0.12 });
+    setTimeout(() => (padlock.visible = false), 500);
+    doors.forEach((d, i) => setTimeout(() => setDoor(d, true, i > 0), i * 150));
+    setTimeout(() => say('柜门开了！', '钥匙一转，锁「啪」地弹开。柜子里暖暖的小灯亮了起来——到处翻翻看吧。', '进展'), 400);
+  });
+  tone(1500, 0.06, { type: 'square', vol: 0.05 }); tone(1100, 0.06, { type: 'square', vol: 0.05, when: 0.12 });
+  return true;
+}
+
+function updateCabLight() {
+  const target = doors.some(d => d.userData.open) ? 2.6 : 0;
+  const from = cabLight.intensity;
+  tween(0.6, p => (cabLight.intensity = from + (target - from) * p), { id: 'cablight' });
+}
+function setDoor(door, open, silent) {
+  if (door.userData.open === open) return;
+  door.userData.open = open;
+  const from = door.rotation.y, to = open ? door.userData.side * 2.3 : 0;
+  tween(open ? 0.8 : 0.55, p => (door.rotation.y = from + (to - from) * p), { ease: open ? ease.back : ease.inOut, id: 'door' + door.userData.side });
+  if (!silent) sfx.door(open);
+  updateCabLight();
+}
+
+/* =========================================================
+ * 抽屉 + 四位密码锁
+ * ======================================================= */
+const drawer = new THREE.Group();
+drawer.position.set(0, y0 + T, 0);
+drawer.userData.open = false;
+cab.add(drawer);
+{
+  const dw = W - 2 * T - 0.06, dd = D - 0.2, dh = 0.5, cz = D / 2 - dd / 2;
+  place(drawer, M(rbox(dw, 0.04, dd, 0.015), C.shelf), 0, 0.02, cz);
+  place(drawer, M(rbox(0.04, dh, dd, 0.015), C.inner), -dw / 2 + 0.02, dh / 2, cz);
+  place(drawer, M(rbox(0.04, dh, dd, 0.015), C.inner), dw / 2 - 0.02, dh / 2, cz);
+  place(drawer, M(rbox(dw, dh, 0.04, 0.015), C.inner), 0, dh / 2, cz - dd / 2 + 0.02);
+}
+const drawerFront = new THREE.Group();
+drawer.add(drawerFront);
+place(drawerFront, M(rbox(W - 0.06, 0.86, 0.08), C.body), 0, 0.35, D / 2 + 0.04);
+place(drawerFront, M(rbox(W - 0.5, 0.56, 0.03, 0.012), C.trim), 0, 0.35, D / 2 + 0.095);
+place(drawerFront, M(rbox(0.7, 0.1, 0.08, 0.04), C.knob), 0, 0.35, D / 2 + 0.15);
+const comboLock = new THREE.Group();
+const comboWheels = [];
+{
+  comboLock.position.set(0.95, 0.35, D / 2 + 0.14);
+  drawerFront.add(comboLock);
+  place(comboLock, M(rbox(0.52, 0.2, 0.07, 0.03), '#3d5a80'), 0, 0, 0);
+  const wg = cyl(0.05, 0.05, 0.075, 10); wg.rotateZ(Math.PI / 2);
+  for (let i = 0; i < 4; i++) {
+    const w = M(wg, '#f6eddd');
+    w.position.set(-0.165 + i * 0.11, 0, 0.035);
+    comboLock.add(w);
+    comboWheels.push(w);
+  }
+}
+const combo = [0, 0, 0, 0];
+register(drawerFront, {
+  name: '抽屉',
+  tip: () => (!S.drawerUnlocked ? '抽屉上有个密码锁' : drawer.userData.open ? '点击关上抽屉' : '点击拉开抽屉'),
+  onClick: () => {
+    if (!S.drawerUnlocked) openComboModal();
+    else setDrawer(!drawer.userData.open);
+    return true;
+  },
+});
+function setDrawer(open, silent) {
+  if (drawer.userData.open === open) return;
+  drawer.userData.open = open;
+  const from = drawer.position.z, to = open ? 1.2 : 0;
+  tween(0.7, p => (drawer.position.z = from + (to - from) * p), { ease: open ? ease.back : ease.inOut, id: 'drawer' });
+  if (!silent) sfx.drawer(open);
+}
+
+/* =========================================================
+ * 柜子里的小东西们
+ * ======================================================= */
+
+/* ---------- 盆栽（上层左） ---------- */
+const plant = new THREE.Group();
+place(cab, plant, -0.95, UPPER, -0.05);
+{
+  place(plant, M(cyl(0.19, 0.14, 0.3), '#e07a5f'), 0, 0.15, 0);
+  place(plant, M(cyl(0.215, 0.205, 0.08), '#cf6a50'), 0, 0.31, 0);
+  place(plant, M(cyl(0.19, 0.19, 0.02), '#6b4f3f', { outline: false }), 0, 0.345, 0);
+}
+const leaves = [];
+{
+  const leafGeo = new THREE.SphereGeometry(1, 16, 12);
+  leafGeo.scale(0.085, 0.24, 0.035); leafGeo.translate(0, 0.22, 0);
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const holder = new THREE.Group();
+    holder.rotation.y = (i / n) * Math.PI * 2 + 0.3;
+    holder.position.y = 0.34;
+    const tilt = new THREE.Group();
+    tilt.rotation.x = 0.35 + (i % 2) * 0.28;
+    tilt.userData.base = tilt.rotation.x;
+    tilt.add(M(leafGeo, i % 2 ? '#81b29a' : '#5e9c7c'));
+    holder.add(tilt);
+    plant.add(holder);
+    leaves.push(tilt);
+  }
+}
+const bloom = new THREE.Group();
+bloom.position.y = 0.34;
+bloom.scale.setScalar(0.001);
+plant.add(bloom);
+{
+  place(bloom, M(cyl(0.012, 0.014, 0.4, 8), '#5e9c7c'), 0, 0.2, 0);
+  const head = new THREE.Group();
+  head.position.y = 0.42;
+  bloom.add(head);
+  const petalGeo = new THREE.SphereGeometry(1, 14, 10);
+  petalGeo.scale(0.055, 0.03, 0.022); petalGeo.translate(0.07, 0, 0);
+  for (let i = 0; i < 6; i++) {
+    const p = M(petalGeo, '#f4a6b8');
+    p.rotation.z = (i / 6) * Math.PI * 2;
+    head.add(p);
+  }
+  const ctrGeo = new THREE.SphereGeometry(0.045, 16, 12); ctrGeo.scale(1, 1, 0.7);
+  place(head, M(ctrGeo, '#f2cc8f'), 0, 0, 0.012);
+}
+plant.userData.bloomed = false;
+register(plant, {
+  name: '小盆栽',
+  desc: () => (plant.userData.bloomed ? '被你摸了摸，开出了一朵小粉花 🌸 奶奶说它只在有人陪的时候开。' : '花谢啦，下次再开给你看。'),
+  onClick() {
+    tween(1.3, (_, p) => leaves.forEach((l, i) => (l.rotation.x = l.userData.base + Math.sin(p * 22 + i) * 0.28 * (1 - p))), { ease: ease.linear, id: 'leaves' });
+    plant.userData.bloomed = !plant.userData.bloomed;
+    const from = bloom.scale.x, to = plant.userData.bloomed ? 1 : 0.001;
+    tween(0.7, p => bloom.scale.setScalar(from + (to - from) * p), { ease: plant.userData.bloomed ? ease.back : ease.inOut, id: 'bloom' });
+    if (plant.userData.bloomed) {
+      sfx.sparkle();
+      for (let i = 0; i < 3; i++) setTimeout(() => spawnText('♥', '#f4a6b8', worldPos(plant, 0.85), { size: 0.18, rise: 0.4 }), i * 180);
+    } else tone(400, 0.2, { vol: 0.1, slideTo: 250 });
+  },
+});
+
+/* ---------- 一排书（上层中间）：开灯后书脊上浮现数字 ---------- */
+const POEM = '高高的先开口，矮矮的最后说；\n不会说话的我，就不必排进去了。';
+const bookData = [
+  { c: '#3d5a80', t: 0.12, h: 0.75, n: '2', name: '《小王子》', desc: '“真正重要的东西，用眼睛是看不见的。”' },
+  { c: '#f2cc8f', t: 0.1, h: 0.56, n: '5', name: '《植物图鉴》', desc: '里面夹着几片压平的四叶草。' },
+  { c: '#e07a5f', t: 0.14, h: 0.84, n: '7', name: '《星空手账》', desc: '记录了 37 个看过流星的夜晚。' },
+  { c: '#81b29a', t: 0.11, h: 0.65, n: '9', name: '《猫咪食谱》', desc: '第一页写着：小鱼干，永远的神。' },
+  { c: '#b56576', t: 0.12, h: 0.7, n: null, name: '《小诗集》', desc: '扉页上是奶奶的字迹：\n' + POEM },
+];
+const digitTex = n => canvasTex('digit' + n, ctx => {
+  ctx.font = 'bold 100px "PingFang SC", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#ffd25e'; ctx.shadowBlur = 24;
+  ctx.fillStyle = '#fff6c2'; ctx.fillText(n, 64, 70);
+  ctx.shadowBlur = 0; ctx.lineWidth = 5; ctx.strokeStyle = '#c98a1d'; ctx.strokeText(n, 64, 70);
+});
+const bookDigits = [];
+const books = [];
+{
+  let x = -0.32;
+  bookData.forEach((b, i) => {
+    const book = new THREE.Group();
+    const d = 0.5;
+    place(book, M(rbox(b.t - 0.02, b.h - 0.04, d - 0.03, 0.006), '#fbf3e4'), 0, b.h / 2, -0.01);
+    place(book, M(rbox(0.014, b.h, d, 0.006), b.c), b.t / 2 - 0.007, b.h / 2, 0);
+    place(book, M(rbox(0.014, b.h, d, 0.006), b.c), -b.t / 2 + 0.007, b.h / 2, 0);
+    place(book, M(rbox(b.t, b.h, 0.016, 0.006), b.c), 0, b.h / 2, d / 2 - 0.008);
+    for (const by of [0.86, 0.14]) place(book, M(rbox(b.t + 0.004, 0.03, 0.01, 0.004), '#f6eddd', { outline: false }), 0, b.h * by, d / 2 + 0.003);
+    const emb = cyl(0.07, 0.07, 0.01, 24); emb.rotateZ(Math.PI / 2);
+    place(book, M(emb, '#f6eddd'), b.t / 2 + 0.006, b.h * 0.6, 0);
+    if (b.n) {
+      const s = Math.min(b.t * 1.1, 0.14);
+      const dg = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: digitTex(b.n), transparent: true, depthWrite: false, toneMapped: false }));
+      dg.position.set(0, b.h * 0.5, d / 2 + 0.006);
+      dg.visible = false;
+      dg.raycast = () => {};
+      book.add(dg);
+      bookDigits.push(dg);
+    }
+    x += b.t / 2;
+    const lean = i === bookData.length - 1 ? -0.22 : 0;
+    book.position.set(x + (lean ? 0.08 : 0), UPPER + (lean ? 0.012 : 0), -0.05);
+    book.rotation.z = lean;
+    book.userData.base = { pos: book.position.clone(), rz: lean };
+    x += b.t / 2 + 0.012;
+    cab.add(book);
+    books.push(book);
+    register(book, {
+      name: b.name,
+      tip: () => b.name + ' · 点击查看书架',
+      onClick() {
+        sfx.whoosh();
+        const { pos, rz } = book.userData.base;
+        tween(0.6, (_, p) => { const k = Math.sin(p * Math.PI); book.position.z = pos.z + 0.15 * k; book.rotation.z = rz * (1 - k); }, { ease: ease.linear, id: 'book' + i });
+        openBooksModal(i);
+        return true;
+      },
+    });
+  });
+}
+
+/* ---------- 蘑菇小台灯（上层右）：缺灯泡 ---------- */
+const lamp = new THREE.Group();
+place(cab, lamp, 0.98, UPPER, -0.05);
+const shadeMat = mat('#f2cc8f', true, { side: THREE.DoubleSide, emissive: '#ffb347', emissiveIntensity: 0 });
+const bulbMat = mat('#fff4cc', true, { emissive: '#fff0a8', emissiveIntensity: 0 });
+const lampLight = new THREE.PointLight('#ffcf7a', 0, 3.5, 1.3);
+let lampBulb;
+{
+  place(lamp, M(cyl(0.15, 0.17, 0.05), '#3d5a80'), 0, 0.025, 0);
+  place(lamp, M(cyl(0.022, 0.022, 0.42, 10), '#3d5a80'), 0, 0.26, 0);
+  place(lamp, M(cyl(0.035, 0.035, 0.05, 12), '#8a8a8a'), 0, 0.39, 0);
+  lampBulb = place(lamp, M(sph(0.07), null, { material: bulbMat, shadow: false }), 0, 0.45, 0);
+  lampBulb.visible = false;
+  place(lamp, M(new THREE.CylinderGeometry(0.11, 0.27, 0.25, 32, 1, true), null, { material: shadeMat }), 0, 0.5, 0);
+  place(lamp, M(sph(0.035), '#3d5a80'), 0, 0.64, 0);
+  lampLight.position.set(0, 0.38, 0.1);
+  lamp.add(lampLight);
+}
+lamp.userData.on = false;
+const lampOn = () => S.lampFixed && lamp.userData.on;
+function setLamp(on, instant) {
+  lamp.userData.on = on;
+  const f = [shadeMat.emissiveIntensity, bulbMat.emissiveIntensity, lampLight.intensity];
+  const t = on ? [0.55, 1.4, 3.2] : [0, 0, 0];
+  const apply = p => {
+    shadeMat.emissiveIntensity = f[0] + (t[0] - f[0]) * p;
+    bulbMat.emissiveIntensity = f[1] + (t[1] - f[1]) * p;
+    lampLight.intensity = f[2] + (t[2] - f[2]) * p;
+  };
+  if (instant) apply(1); else tween(0.35, apply, { id: 'lamp' });
+  bookDigits.forEach(dg => (dg.visible = on));
+}
+register(lamp, {
+  name: '蘑菇小台灯',
+  desc: () => (lamp.userData.on ? '暖黄的光照亮了上层。书脊上好像有什么在微微发光……' : '啪嗒，关灯啦。'),
+  onClick() {
+    tween(0.4, (_, p) => (lamp.scale.y = 1 - Math.sin(p * Math.PI) * 0.08), { ease: ease.linear, id: 'lampsq' });
+    sfx.click();
+    if (!S.lampFixed) {
+      say('蘑菇小台灯', '啪嗒、啪嗒……没反应。凑近一看，灯座上空空的——少了一个灯泡。');
+      return true;
+    }
+    setLamp(!lamp.userData.on);
+  },
+  onUse(item) {
+    if (item !== 'bulb') return false;
+    setFlag('lampFixed');
+    lampBulb.visible = true;
+    tween(0.5, p => lampBulb.scale.setScalar(Math.max(0.01, p)), { ease: ease.back, id: 'bulbin' });
+    tone(900, 0.06, { type: 'square', vol: 0.05 });
+    setTimeout(() => { sfx.click(); setLamp(true); sfx.sparkle(); }, 600);
+    setTimeout(() => say('灯亮了！', '暖黄色的光洒在书架上……咦，几本书的书脊上浮现出了发光的数字。', '进展'), 900);
+    return true;
+  },
+});
+
+/* ---------- 热茶（下层左） ---------- */
+const teacup = new THREE.Group();
+place(cab, teacup, -1.0, LOWER, 0);
+{
+  place(teacup, M(cyl(0.24, 0.2, 0.03, 32), '#98c1d9'), 0, 0.015, 0);
+  place(teacup, M(cyl(0.15, 0.11, 0.2, 32), '#fffaf2'), 0, 0.13, 0);
+  place(teacup, M(cyl(0.135, 0.135, 0.01, 32), '#c07a3a', { outline: false }), 0, 0.222, 0);
+  place(teacup, M(new THREE.TorusGeometry(0.055, 0.017, 8, 20), '#fffaf2'), 0.16, 0.14, 0);
+  const dot = new THREE.SphereGeometry(0.025, 10, 8); dot.scale(1, 1, 0.4);
+  for (let i = 0; i < 3; i++) {
+    const a = (i - 1) * 0.5;
+    const m = M(dot, '#e07a5f', { outline: false });
+    m.position.set(Math.sin(a) * 0.132, 0.12, Math.cos(a) * 0.132);
+    m.lookAt(m.position.x * 2, 0.12, m.position.z * 2);
+    teacup.add(m);
+  }
+  place(teacup, M(rbox(0.07, 0.07, 0.07, 0.012), '#ffffff'), 0.33, 0.035, 0.08);
+  place(teacup, M(rbox(0.07, 0.07, 0.07, 0.012), '#ffffff'), 0.38, 0.035, -0.02).rotation.y = 0.5;
+}
+register(teacup, {
+  name: '奶奶的茶杯',
+  desc: '还是温的。奶奶每天雷打不动地喝下午茶，杯垫上印着一个小小的 ☕。',
+  onClick() {
+    for (let i = 0; i < 6; i++) spawnPuff(worldPos(teacup, 0.25).add(tmpV.set((Math.random() - 0.5) * 0.12, 0, 0)), i * 0.18);
+    tween(0.5, (_, p) => { teacup.position.y = LOWER + Math.sin(p * Math.PI) * 0.06; teacup.rotation.z = Math.sin(p * Math.PI * 3) * 0.06 * (1 - p); }, { ease: ease.linear, id: 'tea' });
+    tone(660, 0.12, { vol: 0.08 }); tone(880, 0.15, { vol: 0.06, when: 0.08 });
+  },
+});
+
+/* ---------- 复古收音机（下层中） ---------- */
+const radio = new THREE.Group();
+place(cab, radio, 0.0, LOWER, -0.05);
+const radioBody = new THREE.Group();
+radio.add(radioBody);
+const needle = M(rbox(0.014, 0.09, 0.012, 0.005), '#e05a47', { outline: false });
+{
+  place(radioBody, M(rbox(0.78, 0.46, 0.34, 0.08), '#e07a5f'), 0, 0.25, 0);
+  const s1 = cyl(0.15, 0.15, 0.03, 32); s1.rotateX(Math.PI / 2);
+  place(radioBody, M(s1, '#f6eddd'), -0.17, 0.25, 0.17);
+  for (let i = -2; i <= 2; i++) {
+    const w = Math.sqrt(0.11 * 0.11 - (i * 0.04) ** 2) * 2;
+    place(radioBody, M(rbox(w, 0.012, 0.01, 0.004), INK, { outline: false }), -0.17, 0.25 + i * 0.04, 0.19);
+  }
+  place(radioBody, M(rbox(0.26, 0.12, 0.03, 0.012), '#f2cc8f'), 0.17, 0.31, 0.17);
+  place(radioBody, needle, 0.1, 0.31, 0.19);
+  const k = cyl(0.045, 0.045, 0.04, 20); k.rotateX(Math.PI / 2);
+  place(radioBody, M(k, '#f6eddd'), 0.11, 0.15, 0.18);
+  place(radioBody, M(k, '#f6eddd'), 0.24, 0.15, 0.18);
+  place(radioBody, M(new THREE.TorusGeometry(0.2, 0.025, 8, 28, Math.PI), '#8a5a3c'), 0, 0.48, 0);
+  const ant = new THREE.Group();
+  ant.position.set(0.3, 0.48, -0.08);
+  ant.rotation.z = -0.45;
+  place(ant, M(cyl(0.012, 0.012, 0.45, 8), '#8a8a8a'), 0, 0.22, 0);
+  place(ant, M(sph(0.03), '#e05a47'), 0, 0.45, 0);
+  radioBody.add(ant);
+}
+const FM_MIN = 87.5, FM_MAX = 108, FM_TARGET = 101.5;
+const radioState = { freq: 92.0 };
+const needleX = f => 0.06 + ((f - FM_MIN) / (FM_MAX - FM_MIN)) * 0.22;
+
+// 音符：Do Re Mi Fa Sol La 各有颜色（八音盒琴键颜色一致）
+const NOTES = [
+  { f: 523, n: 'Do', c: '#e07a5f' }, { f: 587, n: 'Re', c: '#f2a65a' }, { f: 659, n: 'Mi', c: '#f2cc8f' },
+  { f: 698, n: 'Fa', c: '#81b29a' }, { f: 784, n: 'Sol', c: '#98c1d9' }, { f: 880, n: 'La', c: '#b56576' },
+];
+const noteOf = f => NOTES.find(n => n.f === f);
+const melody = [
+  [523, 1], [523, 1], [784, 1], [784, 1], [880, 1], [880, 1], [784, 2],
+  [698, 1], [698, 1], [659, 1], [659, 1], [587, 1], [587, 1], [523, 2],
+];
+const BOX_ANSWER = melody.slice(0, 7).map(m => m[0]);
+const music = { on: false, timers: [], beat: 0.4 };
+function playMelody(source, { notes = melody, onNote, onEnd, box = false } = {}) {
+  stopMusic();
+  music.on = source;
+  let t = 0.05;
+  notes.forEach(([f, d], i) => {
+    music.timers.push(setTimeout(() => {
+      if (box) { tone(f * 2, d * music.beat * 1.2, { type: 'sine', vol: 0.12 }); tone(f * 4, 0.12, { type: 'sine', vol: 0.03 }); }
+      else { tone(f, d * music.beat * 0.9, { type: 'triangle', vol: 0.12 }); tone(f / 2, d * music.beat * 0.9, { type: 'sine', vol: 0.06 }); }
+      const src = source === 'box' ? worldPos(musicBox, 0.35) : worldPos(radio, 0.6).add(tmpV.set(-0.15, 0, 0.15));
+      spawnText(Math.random() > 0.5 ? '♪' : '♫', noteOf(f).c, src);
+      onNote?.(i);
+    }, t * 1000));
+    t += d * music.beat;
+  });
+  music.timers.push(setTimeout(() => { music.on = false; onEnd?.(); }, t * 1000 + 200));
+}
+function stopMusic() { music.timers.forEach(clearTimeout); music.timers = []; music.on = false; }
+register(radio, { name: '复古收音机', tip: () => '复古收音机 · 点击调频', onClick: () => (openRadioModal(), true) });
+
+/* ---------- 糖果罐（下层右）：里面藏着灯泡 ---------- */
+const jar = new THREE.Group();
+place(cab, jar, 1.0, LOWER, 0);
+const jarLid = new THREE.Group();
+const candies = [];
+const jarBulb = new THREE.Group();
+{
+  const glassMat = mat('#cfe8ef', true, { transparent: true, opacity: 0.35 });
+  const glass = M(cyl(0.2, 0.2, 0.42, 32), null, { material: glassMat, shadow: false });
+  glass.position.y = 0.21;
+  glass.renderOrder = 1;
+  // 透明玻璃：描边放在玻璃之后渲染，避免把罐子内部涂黑
+  const gOut = glass.children[0];
+  gOut.material = outlineMat.clone();
+  gOut.material.transparent = true;
+  gOut.renderOrder = 2;
+  jar.add(glass);
+  const colors = ['#e07a5f', '#f2cc8f', '#81b29a', '#f4a6b8', '#98c1d9', '#b56576'];
+  const cg = sph(0.05, 14, 10);
+  for (let i = 0; i < 11; i++) {
+    const a = Math.random() * Math.PI * 2, r = 0.07 + Math.random() * 0.07;
+    const c = M(cg, colors[i % colors.length]);
+    c.position.set(Math.cos(a) * r, 0.055 + (i / 11) * 0.2 + Math.random() * 0.02, Math.sin(a) * r);
+    c.userData.baseY = c.position.y;
+    jar.add(c);
+    candies.push(c);
+  }
+  jarBulb.position.set(0, 0.2, 0.02);
+  place(jarBulb, M(sph(0.065), '#fff4cc'), 0, 0.04, 0);
+  place(jarBulb, M(cyl(0.032, 0.032, 0.06, 12), '#a8a8a8'), 0, -0.035, 0);
+  jarBulb.rotation.z = 0.5;
+  jar.add(jarBulb);
+  jarLid.position.y = 0.42;
+  place(jarLid, M(cyl(0.22, 0.22, 0.06, 32), '#b56576'), 0, 0.03, 0);
+  place(jarLid, M(sph(0.045), '#f6eddd'), 0, 0.09, 0);
+  jar.add(jarLid);
+}
+register(jar, {
+  name: '糖果罐',
+  desc: () => (S.gotBulb ? '偷吃一颗应该不会被发现吧？🍬' : '糖果中间埋着一个亮晶晶的东西。'),
+  onClick() {
+    sfx.pop();
+    tween(0.9, (_, p) => {
+      const h = Math.sin(p * Math.PI);
+      jarLid.position.y = 0.42 + h * 0.4;
+      jarLid.rotation.y = p * Math.PI * 2;
+      jarLid.rotation.z = h * 0.3;
+    }, { ease: ease.linear, id: 'lid' });
+    candies.forEach((c, i) => tween(0.55, (_, p) => (c.position.y = c.userData.baseY + Math.sin(p * Math.PI) * (0.12 + (i / candies.length) * 0.18)), { ease: ease.linear, delay: 0.05 + i * 0.03, id: 'candy' + i }));
+    [880, 1046, 1318, 1568].forEach((f, i) => tone(f, 0.1, { vol: 0.06, when: 0.1 + i * 0.06 }));
+    if (!S.gotBulb) {
+      setFlag('gotBulb');
+      tween(0.8, p => { jarBulb.position.y = 0.2 + 0.75 * p; jarBulb.rotation.z = 0.5 * (1 - p); jarBulb.scale.setScalar(1 + 0.4 * Math.sin(p * Math.PI)); },
+        { ease: ease.out, delay: 0.15, onDone: () => { jarBulb.visible = false; gainItem('bulb'); } });
+      say('糖果罐', '在一堆糖果中间，你摸到了一个小小的灯泡！');
+      return true;
+    }
+  },
+});
+
+/* ---------- 抽屉里：橘猫团子 + 毛线球 + 八音盒 ---------- */
+const cat = new THREE.Group();
+const CAT_X0 = -0.55, CAT_X1 = -1.0;
+place(drawer, cat, CAT_X0, 0.04, 0.05);
+const catHead = new THREE.Group();
+const catTail = new THREE.Group();
+const eyesClosed = [], eyesOpen = [];
+let catBody;
+{
+  const orange = '#f0a35e';
+  place(cat, M(cyl(0.42, 0.45, 0.1, 36), '#98c1d9'), 0, 0.05, 0);
+  const bg = new THREE.SphereGeometry(1, 28, 20); bg.scale(0.33, 0.2, 0.25);
+  catBody = place(cat, M(bg, orange), -0.04, 0.27, 0);
+  const stripe = new THREE.TorusGeometry(0.19, 0.018, 6, 20, Math.PI * 0.7);
+  for (let i = 0; i < 3; i++) {
+    const s = M(stripe, '#d9823f', { outline: false });
+    s.position.set(-0.18 + i * 0.1, 0.27, 0);
+    s.rotation.set(0, Math.PI / 2, Math.PI * 0.15);
+    s.scale.set(1, 1.05, 1.3);
+    cat.add(s);
+  }
+  catTail.position.set(-0.04, 0.12, 0);
+  cat.add(catTail);
+  const tg = new THREE.TorusGeometry(0.3, 0.05, 10, 28, Math.PI * 0.75);
+  const tail = M(tg, orange);
+  tail.rotation.set(Math.PI / 2, 0, Math.PI * 0.95);
+  catTail.add(tail);
+  place(cat, M(sph(0.06), '#fff4e2'), 0.12, 0.13, 0.22);
+  place(cat, M(sph(0.06), '#fff4e2'), 0.3, 0.13, 0.2);
+  catHead.position.set(0.26, 0.28, 0.1);
+  cat.add(catHead);
+  catHead.userData.baseY = catHead.position.y;
+  place(catHead, M(sph(0.165, 28, 20), orange), 0, 0, 0);
+  const muzzle = new THREE.SphereGeometry(0.07, 18, 12); muzzle.scale(1.2, 0.8, 0.8);
+  place(catHead, M(muzzle, '#fff4e2', { outline: false }), 0, -0.05, 0.12);
+  const ear = new THREE.ConeGeometry(0.065, 0.12, 14);
+  for (const s of [-1, 1]) {
+    const e = M(ear, orange);
+    e.position.set(s * 0.09, 0.13, -0.01);
+    e.rotation.z = -s * 0.35;
+    e.userData.side = s;
+    catHead.add(e);
+  }
+  const closed = new THREE.TorusGeometry(0.03, 0.009, 6, 14, Math.PI);
+  const open = sph(0.026, 12, 10);
+  for (const s of [-1, 1]) {
+    const ec = M(closed, INK, { outline: false, shadow: false });
+    ec.position.set(s * 0.065, 0.025, 0.153);
+    ec.rotation.z = Math.PI;
+    catHead.add(ec); eyesClosed.push(ec);
+    const eo = M(open, INK, { outline: false, shadow: false });
+    eo.position.set(s * 0.065, 0.025, 0.148);
+    eo.visible = false;
+    catHead.add(eo); eyesOpen.push(eo);
+    const blush = new THREE.SphereGeometry(0.03, 12, 8); blush.scale(1, 0.6, 0.3);
+    place(catHead, M(blush, '#f4a6b8', { outline: false, shadow: false }), s * 0.11, -0.03, 0.125);
+  }
+  place(catHead, M(sph(0.018, 10, 8), '#e5737f', { outline: false }), 0, -0.025, 0.17);
+}
+const catState = { awake: false, zTimer: 0 };
+const bubble = $('#bubble');
+let bubbleTimer;
+function catSay(text, ms = 2200) {
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => bubble.classList.remove('show'), ms);
+}
+const setEyes = open => { eyesClosed.forEach(e => (e.visible = !open)); eyesOpen.forEach(e => (e.visible = open)); };
+const catEars = () => catHead.children.filter(c => c.userData.side);
+const headPose = k => { catHead.rotation.x = -0.35 * k; catHead.rotation.z = 0.22 * k; catHead.position.y = catHead.userData.baseY + 0.08 * k; };
+function wakeCat() {
+  if (catState.awake) return;
+  catState.awake = true;
+  setEyes(true);
+  meow();
+  catSay(['喵～', '喵呜？', '谁吵我睡觉！', '还有小鱼干吗？', '呼噜呼噜…'][Math.floor(Math.random() * 5)]);
+  sequence([
+    { d: 0.35, e: ease.back, f: headPose },
+    { d: 0.5, e: ease.linear, f: (_, p) => catEars().forEach(e => (e.rotation.z = -e.userData.side * (0.35 + Math.sin(p * Math.PI * 4) * 0.25))) },
+    { d: 1.6, e: ease.linear },
+    { d: 0.5, f: p => headPose(1 - p) },
+  ], () => { setEyes(false); catState.awake = false; });
+}
+function feedCat() {
+  setFlag('catFed');
+  catState.awake = true;
+  setEyes(true);
+  meow();
+  catSay('小鱼干！！', 2600);
+  for (let i = 0; i < 4; i++) setTimeout(() => spawnText('♥', '#f4a6b8', worldPos(catHead, 0.2), { size: 0.18, rise: 0.5 }), 300 + i * 220);
+  sequence([
+    { d: 0.35, e: ease.back, f: headPose },
+    { d: 1.4, e: ease.linear, f: (_, p) => { catHead.rotation.x = -0.35 + Math.sin(p * Math.PI * 10) * 0.12; if (Math.random() < 0.05) tone(300 + Math.random() * 200, 0.05, { type: 'triangle', vol: 0.05 }); } },
+    { d: 0.4, f: p => headPose(1 - p) },
+    { d: 1.2, f: p => { cat.position.x = CAT_X0 + (CAT_X1 - CAT_X0) * p; catBody.rotation.z = Math.sin(p * Math.PI * 4) * 0.05; } },
+  ], () => {
+    setEyes(false);
+    catState.awake = false;
+    revealBox();
+  });
+}
+register(cat, {
+  name: '橘猫 · 团子',
+  desc: '吃饱了的团子在抽屉里打着呼噜，被吵醒会有点小脾气。',
+  onClick() {
+    if (!S.catFed) {
+      catSay('咕噜噜……', 1600);
+      tone(90, 0.3, { type: 'sine', vol: 0.15, slideTo: 60 });
+      say('橘猫 · 团子', '团子睡得很沉，肚子还在咕咕叫。怎么叫都叫不醒……它身子底下好像压着什么东西。');
+      return true;
+    }
+    wakeCat();
+  },
+  onUse(item) {
+    if (item !== 'fish') return false;
+    feedCat();
+    say('开饭啦', '团子「噌」地一下醒了，叼过小鱼干吧唧吧唧……', '进展');
+    return true;
+  },
+});
+
+const yarn = new THREE.Group();
+place(drawer, yarn, 0.75, 0.21, 0.1);
+{
+  const ball = new THREE.Group();
+  yarn.add(ball);
+  place(ball, M(sph(0.17, 24, 18), '#b56576'), 0, 0, 0);
+  const ring = new THREE.TorusGeometry(0.168, 0.01, 6, 36);
+  for (let i = 0; i < 5; i++) {
+    const r = M(ring, '#d98aa0', { outline: false });
+    r.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+    ball.add(r);
+  }
+  const thread = new THREE.TorusGeometry(0.14, 0.01, 6, 20, Math.PI * 0.8);
+  const th = M(thread, '#b56576', { outline: false });
+  th.rotation.set(Math.PI / 2, 0, 0);
+  th.position.set(-0.12, -0.16, 0.05);
+  yarn.add(th);
+  place(yarn, M(rbox(0.12, 0.08, 0.01, 0.01), '#fffaf1'), 0.1, -0.08, 0.2).rotation.z = 0.3;
+  yarn.userData.ball = ball;
+}
+register(yarn, {
+  name: '毛线球',
+  desc: '团子最爱的玩具。线头上系着一张小纸条：「想奶奶了，就听 FM 101.5」。',
+  onClick() {
+    if (yarn.userData.busy) return;
+    yarn.userData.busy = true;
+    const ball = yarn.userData.ball, x0 = 0.75, x1 = 0.48, r = 0.17;
+    sequence([
+      { d: 0.6, e: ease.out, f: p => { yarn.position.x = x0 + (x1 - x0) * p; ball.rotation.z = (x0 - yarn.position.x) / r; } },
+      { d: 0.25, e: ease.linear },
+      { d: 0.8, f: p => { yarn.position.x = x1 + (x0 - x1) * p; ball.rotation.z = (x0 - yarn.position.x) / r; } },
+    ], () => (yarn.userData.busy = false));
+    tone(300, 0.4, { type: 'triangle', vol: 0.06, slideTo: 200 });
+    if (S.catFed) setTimeout(wakeCat, 450);
+  },
+});
+
+const musicBox = new THREE.Group();
+place(drawer, musicBox, -0.22, 0.04, 0.12);
+const boxLid = new THREE.Group();
+{
+  place(musicBox, M(rbox(0.4, 0.2, 0.3, 0.03), '#f4a6b8'), 0, 0.1, 0);
+  place(musicBox, M(rbox(0.405, 0.035, 0.305, 0.012), '#f2c14e', { outline: false }), 0, 0.05, 0);
+  place(musicBox, M(rbox(0.32, 0.02, 0.22, 0.01), '#fffaf1', { outline: false }), 0, 0.2, 0);
+  const crank = cyl(0.012, 0.012, 0.08, 8); crank.rotateZ(Math.PI / 2);
+  place(musicBox, M(crank, '#b9b4ad'), 0.23, 0.11, 0);
+  place(musicBox, M(sph(0.025), '#b9b4ad'), 0.27, 0.11, 0);
+  const scroll = cyl(0.03, 0.03, 0.2, 14); scroll.rotateZ(Math.PI / 2);
+  place(musicBox, M(scroll, '#fffaf1'), 0, 0.235, 0);
+  place(musicBox, M(rbox(0.04, 0.065, 0.02, 0.008), '#e07a5f'), 0, 0.235, 0);
+  boxLid.position.set(0, 0.2, -0.15);
+  musicBox.add(boxLid);
+  place(boxLid, M(rbox(0.42, 0.06, 0.31, 0.03), '#f2c14e'), 0, 0.03, 0.15);
+  const heart = new THREE.SphereGeometry(0.04, 14, 10); heart.scale(1, 1, 0.5);
+  place(boxLid, M(heart, '#e07a5f'), 0, 0.07, 0.15).rotation.x = -Math.PI / 2;
+}
+musicBox.visible = false;
+register(musicBox, {
+  name: '小八音盒',
+  tip: () => (S.boxOpen ? '奶奶的八音盒' : '上了锁的八音盒'),
+  onClick() {
+    if (!S.boxOpen) openBoxModal();
+    else { playMelody('box', { box: true }); setTimeout(showEnding, 600); }
+    return true;
+  },
+});
+function revealBox() {
+  musicBox.visible = true;
+  musicBox.scale.setScalar(0.01);
+  tween(0.6, p => musicBox.scale.setScalar(Math.max(0.01, p)), { ease: ease.back });
+  sfx.sparkle();
+  for (let i = 0; i < 5; i++) setTimeout(() => spawnText('✦', '#f2c14e', worldPos(musicBox, 0.3), { size: 0.16, rise: 0.5, drift: 0.6 }), i * 120);
+  say('咦？', '团子挪了挪窝……原来它一直压着一个粉色的小八音盒！', '新发现');
+}
+function openBox() {
+  setFlag('boxOpen');
+  tween(1.0, p => (boxLid.rotation.x = -1.9 * p), { ease: ease.back, delay: 0.2 });
+  sfx.sparkle();
+  for (let i = 0; i < 10; i++) setTimeout(() => spawnText(i % 2 ? '✦' : '♥', i % 2 ? '#f2c14e' : '#f4a6b8', worldPos(musicBox, 0.35), { size: 0.18, rise: 0.8, drift: 0.9, life: 2 }), 300 + i * 110);
+  setTimeout(() => playMelody('box', { box: true }), 900);
+  S.done = true;
+  save();
+  setTimeout(showEnding, 3600);
+}
+
+/* ---------- 柜顶：小闹钟 + 地球仪 ---------- */
+const clock = new THREE.Group();
+place(cab, clock, -0.9, TOP, 0.15);
+const clockBody = new THREE.Group();
+clockBody.position.y = 0.32;
+clock.add(clockBody);
+const hourHand = new THREE.Group(), minHand = new THREE.Group();
+const CLOCK_ICONS = { 2: '🌸', 4: '☕', 7: '📖', 9: '🐟', 11: '🌙' };
+const iconTex = ch => canvasTex('icon' + ch, ctx => {
+  ctx.font = '96px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(ch, 64, 72);
+});
+{
+  const b = cyl(0.28, 0.28, 0.14, 40); b.rotateX(Math.PI / 2);
+  place(clockBody, M(b, '#b56576'), 0, 0, 0);
+  const f = cyl(0.225, 0.225, 0.01, 40); f.rotateX(Math.PI / 2);
+  place(clockBody, M(f, '#fffaf1'), 0, 0, 0.072);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const ic = CLOCK_ICONS[i === 0 ? 12 : i];
+    if (ic) {
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.075), new THREE.MeshBasicMaterial({ map: iconTex(ic), transparent: true, depthWrite: false }));
+      pl.position.set(Math.sin(a) * 0.175, Math.cos(a) * 0.175, 0.079);
+      pl.raycast = () => {};
+      clockBody.add(pl);
+      continue;
+    }
+    const big = i % 3 === 0;
+    const tk = M(rbox(big ? 0.025 : 0.014, big ? 0.05 : 0.025, 0.01, 0.004), INK, { outline: false });
+    tk.position.set(Math.sin(a) * 0.18, Math.cos(a) * 0.18, 0.08);
+    tk.rotation.z = -a;
+    clockBody.add(tk);
+  }
+  const hg = rbox(0.03, 0.12, 0.01, 0.006); hg.translate(0, 0.05, 0);
+  const mg = rbox(0.02, 0.17, 0.01, 0.006); mg.translate(0, 0.075, 0);
+  hourHand.add(M(hg, INK, { outline: false }));
+  minHand.add(M(mg, '#e05a47', { outline: false }));
+  hourHand.position.z = 0.085; minHand.position.z = 0.092;
+  clockBody.add(hourHand, minHand);
+  place(clockBody, M(sph(0.02), '#f2c14e', { outline: false }), 0, 0, 0.1);
+  const bell = new THREE.SphereGeometry(0.1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  for (const s of [-1, 1]) {
+    const bl = M(bell, '#f2cc8f');
+    bl.position.set(s * 0.17, 0.25, 0);
+    bl.rotation.z = -s * 0.5;
+    clockBody.add(bl);
+    place(clockBody, M(sph(0.035), '#8a5a3c'), s * 0.17, -0.27, 0);
+  }
+  place(clockBody, M(sph(0.035), '#8a5a3c'), 0, 0.31, 0);
+}
+const clockState = { spin: 0, h: 10, m: 10 };
+function ringClock() {
+  tween(1.6, p => (clockState.spin = p * Math.PI * 2 * 2), { id: 'clockspin', onDone: () => (clockState.spin = 0) });
+  tween(1.2, (_, p) => { clockBody.rotation.z = Math.sin(p * Math.PI * 16) * 0.12 * (1 - p); clockBody.position.y = 0.32 + Math.abs(Math.sin(p * Math.PI * 8)) * 0.04 * (1 - p); }, { ease: ease.linear, id: 'clockshake' });
+  for (let i = 0; i < 10; i++) tone(i % 2 ? 1760 : 2093, 0.07, { type: 'square', vol: 0.035, when: i * 0.09 });
+}
+register(clock, {
+  name: '小闹钟',
+  tip: () => (S.gotKey ? '小闹钟' : '停走的小闹钟 · 点击拨动指针'),
+  desc: '叮铃铃！它又开始走了，显示的是你此刻的真实时间。',
+  onClick() {
+    if (!S.gotKey) { openClockModal(); return true; }
+    ringClock();
+  },
+});
+
+const globe = new THREE.Group();
+place(cab, globe, 0.95, TOP, 0.05);
+const globeSpin = new THREE.Group();
+const globeBase = new THREE.Group();
+{
+  globe.add(globeBase);
+  place(globeBase, M(cyl(0.15, 0.18, 0.06, 28), '#8a5a3c'), 0, 0.03, 0);
+  place(globeBase, M(rbox(0.12, 0.012, 0.01, 0.004), INK, { outline: false }), 0, 0.03, 0.17);
+  place(globe, M(cyl(0.025, 0.03, 0.14, 10), '#8a5a3c'), 0, 0.12, 0);
+  const tiltG = new THREE.Group();
+  tiltG.position.y = 0.46;
+  tiltG.rotation.z = 0.38;
+  globe.add(tiltG);
+  const arc = M(new THREE.TorusGeometry(0.3, 0.016, 8, 36, Math.PI), '#f2c14e');
+  arc.rotation.z = Math.PI / 2;
+  tiltG.add(arc);
+  tiltG.add(globeSpin);
+  globeSpin.add(M(sph(0.25, 32, 24), '#98c1d9'));
+  const landColors = ['#81b29a', '#5e9c7c', '#f2cc8f'];
+  for (let i = 0; i < 9; i++) {
+    const dir = new THREE.Vector3(Math.random() - 0.5, (Math.random() - 0.5) * 1.4, Math.random() - 0.5).normalize();
+    const s = 0.06 + Math.random() * 0.06;
+    const lg = new THREE.SphereGeometry(1, 16, 10); lg.scale(s * (1 + Math.random() * 0.6), s, s * 0.32);
+    const land = new THREE.Mesh(lg, mat(landColors[i % 3]));
+    land.position.copy(dir.clone().multiplyScalar(0.235));
+    land.lookAt(dir.clone().multiplyScalar(2));
+    land.castShadow = true;
+    globeSpin.add(land);
+  }
+}
+const globeState = { v: 0.25 };
+register(globe, {
+  name: '地球仪',
+  desc: () => (S.radioTuned ? '呼——转一转，下一站去哪儿旅行？' : '呼——转一转。底座上好像有一道细缝，但怎么也抠不开，像是在等什么暗号。'),
+  onClick() {
+    globeState.v += 14;
+    sfx.whoosh();
+    if (S.radioTuned && !S.gotFish) {
+      setFlag('gotFish');
+      setTimeout(() => {
+        tween(0.5, (_, p) => (globeBase.position.z = Math.sin(p * Math.PI) * 0.12), { ease: ease.linear });
+        tone(700, 0.08, { type: 'square', vol: 0.05 });
+        spawnText('🐟', '#98c1d9', worldPos(globe, 0.2).add(tmpV.set(0, 0, 0.25)), { size: 0.3, rise: 0.6, drift: 0 });
+        gainItem('fish');
+      }, 700);
+      say('会转的世界', '地球仪越转越快，底座的暗格「咔」地弹开——里面是一条香喷喷的小鱼干！', '进展');
+      return true;
+    }
+  },
+});
+
+/* =========================================================
+ * 背包 / 道具
+ * ======================================================= */
+const ITEMS = {
+  letter: { icon: '📜', name: '奶奶的信', has: () => true },
+  key: { icon: '🗝️', name: '小铜钥匙', has: () => S.gotKey && !S.doorsUnlocked },
+  bulb: { icon: '💡', name: '小灯泡', has: () => S.gotBulb && !S.lampFixed },
+  fish: { icon: '🐟', name: '小鱼干', has: () => S.gotFish && !S.catFed },
+};
+const inv = $('#inv'), cursorItem = $('#cursorItem');
+let selected = null;
+function updateInv() {
+  if (selected && !ITEMS[selected].has()) select(null);
+  const held = Object.keys(ITEMS).filter(k => ITEMS[k].has());
+  let html = '<span class="lbl">背包</span>';
+  for (let i = 0; i < 4; i++) {
+    const k = held[i];
+    html += k
+      ? `<div class="slot${selected === k ? ' sel' : ''}" data-k="${k}">${ITEMS[k].icon}<span class="nm">${ITEMS[k].name}</span></div>`
+      : '<div class="slot empty"></div>';
+  }
+  inv.innerHTML = html;
+}
+function select(k) {
+  selected = k;
+  cursorItem.textContent = k ? ITEMS[k].icon : '';
+  cursorItem.style.display = k ? 'block' : 'none';
+  inv.querySelectorAll('.slot').forEach(s => s.classList.toggle('sel', s.dataset.k === k));
+  if (hovered) tipEl.textContent = tipText(hovered.userData.info);
+}
+inv.addEventListener('click', e => {
+  const s = e.target.closest('.slot[data-k]');
+  if (!s) return;
+  audio();
+  sfx.click();
+  const k = s.dataset.k;
+  if (k === 'letter') return openLetter();
+  if (selected === k) return select(null);
+  select(k);
+  say(ITEMS[k].icon + ' ' + ITEMS[k].name, '已拿在手上。点击场景里想用它的地方吧（Esc 或再点一次可以放下）。');
+});
+addEventListener('pointermove', e => {
+  cursorItem.style.left = e.clientX + 'px';
+  cursorItem.style.top = e.clientY + 'px';
+});
+function gainItem(k) {
+  updateInv();
+  sfx.sparkle();
+  showToast(`获得 ${ITEMS[k].icon} ${ITEMS[k].name}`);
+  const s = inv.querySelector(`[data-k="${k}"]`);
+  s?.animate([{ transform: 'scale(1.6) rotate(-12deg)' }, { transform: 'scale(1)' }], { duration: 500, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+}
+
+/* =========================================================
+ * 进度 / 计时 / 提示
+ * ======================================================= */
+const STEPS = [
+  ['🗝️', 'gotKey', '拿到钥匙'], ['🚪', 'doorsUnlocked', '打开柜门'], ['💡', 'lampFixed', '修好台灯'], ['🔢', 'drawerUnlocked', '打开抽屉'],
+  ['📻', 'radioTuned', '收听电台'], ['🐟', 'catFed', '喂饱团子'], ['🎵', 'boxOpen', '打开八音盒'],
+];
+const progressEl = $('#progress');
+progressEl.innerHTML = STEPS.map(([ic, k, t]) => `<span data-k="${k}" title="${t}">${ic}</span>`).join('');
+function updateHud() {
+  progressEl.querySelectorAll('span').forEach(s => {
+    const on = !!S[s.dataset.k];
+    if (on && !s.classList.contains('on')) s.animate([{ transform: 'scale(1.8)' }, { transform: 'scale(1)' }], { duration: 500, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+    s.classList.toggle('on', on);
+  });
+  $('#time').textContent = fmtTime(S.time);
+}
+const fmtTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+setInterval(() => {
+  if (!S.introSeen || S.done || document.hidden) return;
+  S.time++;
+  $('#time').textContent = fmtTime(S.time);
+  if (S.time % 5 === 0) save();
+}, 1000);
+
+const HINTS = {
+  clock: ['奶奶的信里说「钥匙交给了时间」。柜顶上那个停走的闹钟，表盘上画着几个小图案。', '下午茶 → 时针指向 ☕；团子的点心是小鱼干 → 分针（长针）指向 🐟。'],
+  door: ['柜门被锁住了，而你的背包里刚好有把钥匙。', '点选底部背包里的 🗝️，再点击柜门上的小铜锁。'],
+  bulb: ['台灯缺个灯泡。柜子里有没有透明的、能装小东西的容器？', '点开下层右边的糖果罐看看。'],
+  lamp: ['灯泡拿到了，它该装在哪儿呢？', '点选背包里的 💡，再点击上层右边的蘑菇台灯。'],
+  drawer: ['抽屉的密码是四位数。台灯亮着的时候，仔细看看书架上的书脊，再读读那本《小诗集》。', '诗的意思：按书的高矮，从最高读到最矮；没有数字的《小诗集》跳过。'],
+  radio: ['抽屉里的毛线球上系着一张纸条。', '点击收音机，把频率调到 FM 101.5。信号格越满越接近。'],
+  fish: ['电台说点心「藏在会转的世界里」。', '去点一点柜顶右边的地球仪。'],
+  feed: ['团子饿得叫不醒，它最爱吃什么？', '点选背包里的 🐟，再点击抽屉里的团子。'],
+  box: ['八音盒要你弹出「那首睡前歌」的开头。还记得收音机里放的歌吗？琴键的颜色和收音机上亮起的音符颜色是对应的。', '《小星星》的前七个音：Do Do Sol Sol La La Sol。'],
+};
+function stage() {
+  if (!S.gotKey) return 'clock';
+  if (!S.doorsUnlocked) return 'door';
+  if (!S.gotBulb && !S.lampFixed) return 'bulb';
+  if (!S.lampFixed) return 'lamp';
+  if (!S.drawerUnlocked) return 'drawer';
+  if (!S.radioTuned) return 'radio';
+  if (!S.gotFish && !S.catFed) return 'fish';
+  if (!S.catFed) return 'feed';
+  if (!S.boxOpen) return 'box';
+  return null;
+}
+$('#btnHint').addEventListener('click', () => {
+  audio();
+  const st = stage();
+  if (!st) return say('已经通关啦', '奶奶的礼物已经被你找到了。想再玩一次可以点「重来」。');
+  const lv = S.hintLv[st] || 0;
+  const show = Math.min(lv, 1);
+  if (lv < 2) { S.hintLv[st] = lv + 1; S.hints++; save(); }
+  say(show === 0 ? '小提示' : '大提示', HINTS[st][show], `提示 ${show + 1}/2`);
+  tone(880, 0.1, { vol: 0.06 }); tone(1175, 0.12, { vol: 0.05, when: 0.08 });
+});
+
+/* =========================================================
+ * 弹窗
+ * ======================================================= */
+const modal = $('#modal'), sheet = $('#sheet');
+let modalClose = null;
+function openModal(html, onClose) {
+  if (modal.classList.contains('show')) closeModal();
+  sheet.innerHTML = html + '<button class="x" title="关闭">✕</button>';
+  sheet.querySelector('.x').onclick = closeModal;
+  sheet.scrollTop = 0;
+  modal.classList.add('show');
+  modalClose = onClose;
+  setHover(null);
+  select(null);
+  return sheet;
+}
+function closeModal() {
+  if (!modal.classList.contains('show')) return;
+  modal.classList.remove('show');
+  const f = modalClose;
+  modalClose = null;
+  f?.();
+}
+modal.addEventListener('pointerdown', e => { if (e.target === modal) closeModal(); });
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (modal.classList.contains('show')) closeModal();
+  else select(null);
+});
+const shake = el => { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
+const wrong = () => { tone(180, 0.18, { type: 'triangle', vol: 0.12 }); tone(140, 0.25, { type: 'triangle', vol: 0.12, when: 0.12 }); };
+
+/* ---------- 奶奶的信 ---------- */
+function openLetter() {
+  const first = !S.introSeen;
+  const s = openModal(`
+    <h2>📜 奶奶的信</h2>
+    <div class="letter">
+      亲爱的小家伙：<br>
+      我出门旅行啦。柜子最深处，藏着留给你的礼物。<br>
+      <em>钥匙交给了时间</em>——<em>下午茶</em>的时候，<em>长针</em>会去找<em>团子的点心</em>。<br>
+      记得照顾好团子，它饿了就不理人。
+      <div class="sign">—— 爱你的奶奶</div>
+    </div>
+    <div class="row"><button class="btn primary" id="ok">${first ? '好，我来找找看！' : '收好'}</button></div>
+  `, () => { if (!S.introSeen) { S.introSeen = true; save(); say('从哪里开始呢？', '「钥匙交给了时间」……先在柜子上找找和时间有关的东西吧。'); } });
+  s.querySelector('#ok').onclick = closeModal;
+  tone(500, 0.2, { type: 'triangle', vol: 0.06, slideTo: 700 });
+}
+
+/* ---------- 闹钟特写 ---------- */
+function clockSVG(h, m) {
+  let s = '<svg viewBox="-110 -110 220 220" class="clockface">';
+  s += '<circle r="104" fill="#b56576" stroke="#3d3030" stroke-width="5"/><circle r="86" fill="#fffaf1" stroke="#3d3030" stroke-width="4"/>';
+  for (let i = 1; i <= 12; i++) {
+    const a = (i / 12) * Math.PI * 2, x = Math.sin(a) * 66, y = -Math.cos(a) * 66;
+    s += CLOCK_ICONS[i]
+      ? `<text x="${x}" y="${y + 8}" font-size="23" text-anchor="middle">${CLOCK_ICONS[i]}</text>`
+      : `<circle cx="${x}" cy="${y}" r="${i % 3 === 0 ? 5 : 3.5}" fill="#3d3030"/>`;
+  }
+  s += `<g transform="rotate(${(h % 12) * 30})"><rect x="-5" y="-44" width="10" height="52" rx="5" fill="#3d3030"/></g>`;
+  s += `<g transform="rotate(${m * 6})"><rect x="-3.5" y="-70" width="7" height="78" rx="3.5" fill="#e05a47" stroke="#3d3030" stroke-width="2"/></g>`;
+  s += '<circle r="8" fill="#f2c14e" stroke="#3d3030" stroke-width="3"/></svg>';
+  return s;
+}
+function openClockModal() {
+  const s = openModal(`
+    <h2>⏰ 停走的小闹钟</h2>
+    <p class="sub">表盘上没有数字，只画着几个小图案。<br>背面有个小锁扣，像是在等某个特定的时间。</p>
+    <div id="face"></div>
+    <div class="ctrl">
+      <button class="btn" data-a="h-">◀</button><span>短针 · 时</span><button class="btn" data-a="h+">▶</button>
+      <button class="btn" data-a="m-">◀</button><span>长针 · 分</span><button class="btn" data-a="m+">▶</button>
+    </div>
+    <div class="row"><button class="btn primary" id="ok">拨好了</button></div>
+    <div class="msg"></div>
+  `);
+  const face = s.querySelector('#face'), msg = s.querySelector('.msg');
+  const draw = () => (face.innerHTML = clockSVG(clockState.h, clockState.m));
+  draw();
+  s.querySelectorAll('[data-a]').forEach(b => (b.onclick = () => {
+    const a = b.dataset.a;
+    if (a === 'h+') clockState.h = (clockState.h % 12) + 1;
+    if (a === 'h-') clockState.h = ((clockState.h + 10) % 12) + 1;
+    if (a === 'm+') clockState.m = (clockState.m + 5) % 60;
+    if (a === 'm-') clockState.m = (clockState.m + 55) % 60;
+    tone(1400, 0.03, { type: 'square', vol: 0.04 });
+    msg.textContent = '';
+    draw();
+  }));
+  s.querySelector('#ok').onclick = () => {
+    if (clockState.h === 4 && clockState.m === 45) {
+      setFlag('gotKey');
+      closeModal();
+      ringClock();
+      setTimeout(() => {
+        gainItem('key');
+        say('叮铃铃——！', '闹钟突然响了起来，后盖「啪」地弹开，掉出一把小铜钥匙。', '进展');
+      }, 900);
+    } else {
+      shake(sheet);
+      wrong();
+      msg.textContent = ['……闹钟一动不动。', '嗒。没有反应。', '好像不是这个时间。'][Math.floor(Math.random() * 3)];
+    }
+  };
+}
+
+/* ---------- 书架特写 ---------- */
+function openBooksModal(focus) {
+  const on = lampOn();
+  const SC = 210, base = 222;
+  let x = 30, svg = `<svg viewBox="0 0 380 240" class="shelfsvg"><rect x="8" y="${base}" width="364" height="12" rx="4" fill="#efe0c6" stroke="#3d3030" stroke-width="3"/>`;
+  bookData.forEach((b, i) => {
+    const w = b.t * 470, hh = b.h * SC, lean = i === 4;
+    const tx = lean ? `rotate(12 ${x} ${base})` : '';
+    svg += `<g class="spine" data-i="${i}" transform="${tx}">
+      <rect class="cv" x="${x}" y="${base - hh}" width="${w}" height="${hh}" rx="5" fill="${b.c}" stroke="#3d3030" stroke-width="3"/>
+      <rect x="${x + 3}" y="${base - hh * 0.88}" width="${w - 6}" height="6" fill="#f6eddd"/>
+      <rect x="${x + 3}" y="${base - hh * 0.16}" width="${w - 6}" height="6" fill="#f6eddd"/>
+      ${b.n && on ? `<text x="${x + w / 2}" y="${base - hh * 0.5 + 12}" font-size="34" font-weight="800" text-anchor="middle" fill="#fff6c2" stroke="#c98a1d" stroke-width="1.5" style="filter: drop-shadow(0 0 6px #ffd25e)">${b.n}</text>` : ''}
+    </g>`;
+    x += w + (lean ? 26 : 10);
+  });
+  if (!on) svg += `<rect x="0" y="0" width="380" height="240" rx="12" fill="#1e1a26" opacity=".72"/><text x="190" y="118" text-anchor="middle" font-size="15" fill="#fffaf1" font-weight="700">太暗了，看不清书脊上写了什么……</text>`;
+  svg += '</svg>';
+  const s = openModal(`
+    <h2>📚 书架</h2>
+    <p class="sub">${on ? '台灯的光照在书脊上，几个数字微微发着光。' : '光线很暗，只能看出书的轮廓。'}点击书脊看看。</p>
+    ${svg}
+    <div class="bookinfo" id="info"></div>
+  `);
+  const info = s.querySelector('#info');
+  const show = i => {
+    const b = bookData[i];
+    info.innerHTML = `<b>${b.name}</b>${b.desc.replace(/\n/g, '<br>')}`;
+  };
+  s.querySelectorAll('.spine').forEach(g => (g.onclick = () => { sfx.click(); show(+g.dataset.i); }));
+  show(focus);
+}
+
+/* ---------- 抽屉密码锁 ---------- */
+function openComboModal() {
+  const s = openModal(`
+    <h2>🔢 抽屉密码锁</h2>
+    <p class="sub">四个小转轮，每个可以拨 0–9。</p>
+    <div class="wheels">${combo.map((_, i) => `<div class="wheel"><button data-i="${i}" data-d="1">▲</button><div class="num">${combo[i]}</div><button data-i="${i}" data-d="-1">▼</button></div>`).join('')}</div>
+    <div class="row"><button class="btn primary" id="ok">开锁</button></div>
+    <div class="msg"></div>
+  `);
+  const nums = s.querySelectorAll('.num'), msg = s.querySelector('.msg');
+  s.querySelectorAll('.wheel button').forEach(b => (b.onclick = () => {
+    const i = +b.dataset.i;
+    combo[i] = (combo[i] + +b.dataset.d + 10) % 10;
+    nums[i].textContent = combo[i];
+    comboWheels[i].rotation.x = combo[i] * (Math.PI / 5);
+    tone(1300 + i * 80, 0.03, { type: 'square', vol: 0.04 });
+    msg.textContent = '';
+  }));
+  s.querySelector('#ok').onclick = () => {
+    if (combo.join('') === '7295') {
+      setFlag('drawerUnlocked');
+      closeModal();
+      sfx.click();
+      tween(0.6, (_, p) => { comboLock.position.y = 0.35 + 0.15 * Math.sin(p * Math.PI) - 0.6 * p * p; comboLock.rotation.z = p * 1.5; },
+        { ease: ease.linear, onDone: () => (comboLock.visible = false) });
+      setTimeout(() => setDrawer(true), 500);
+      setTimeout(() => say('抽屉打开了！', '咔嗒——密码对了。抽屉里，一只橘猫正蜷在软垫上呼呼大睡。', '进展'), 900);
+    } else {
+      shake(sheet);
+      wrong();
+      msg.textContent = '咔。锁没有开。';
+    }
+  };
+}
+
+/* ---------- 收音机 ---------- */
+let noise = null;
+function startNoise() {
+  if (muted || noise) return;
+  const a = audio();
+  const buf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; src.loop = true;
+  f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.6;
+  g.gain.value = 0;
+  src.connect(f).connect(g).connect(a.destination);
+  src.start();
+  noise = { src, g };
+}
+function setNoise(v) { if (noise) noise.g.gain.setTargetAtTime(v, audio().currentTime, 0.04); }
+function stopNoise() { if (noise) { noise.src.stop(); noise = null; } }
+function openRadioModal() {
+  const tuned = S.radioTuned;
+  let gap = 0;
+  const dots = melody.map(([f, d], i) => `<i class="${d > 1 ? 'long' : ''}${i === 6 ? ' gap' : ''}" style="background:${noteOf(f).c}"></i>`).join('');
+  const s = openModal(`
+    <h2>📻 复古收音机</h2>
+    <p class="sub">${tuned ? '「奶奶电台」还在轻轻地播着。' : '拖动旋钮调频。滋滋啦啦的，哪里有信号呢？'}</p>
+    <div class="radio">
+      <div class="fq"><span id="fq">${radioState.freq.toFixed(1)}</span><small>MHz</small></div>
+      <div class="bars">${[0, 1, 2, 3, 4].map(i => `<i style="height:${8 + i * 4}px"></i>`).join('')}</div>
+    </div>
+    <input type="range" id="fr" min="${FM_MIN * 10}" max="${FM_MAX * 10}" step="1" value="${Math.round(radioState.freq * 10)}" ${tuned ? 'disabled' : ''}>
+    <div class="scale"><span>87.5</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span></div>
+    <div class="broadcast" id="bc"></div>
+    <div class="notes" id="notes">${dots}</div>
+    <div class="row"><button class="btn" id="replay" ${tuned ? '' : 'hidden'}>▶ 再听一遍</button></div>
+  `, () => { stopNoise(); if (music.on === 'radio') stopMusic(); });
+  const fq = s.querySelector('#fq'), bars = s.querySelectorAll('.bars i'), fr = s.querySelector('#fr');
+  const bc = s.querySelector('#bc'), noteEls = s.querySelectorAll('#notes i'), replay = s.querySelector('#replay');
+  const BROADCAST = '「滋……这里是奶奶电台。小家伙，今天的点心，藏在<b>会转的世界</b>里哦。给你唱首睡前歌吧——」';
+  const update = () => {
+    const f = radioState.freq;
+    const st = Math.max(0, 1 - Math.abs(f - FM_TARGET) / 5);
+    const n = S.radioTuned ? 5 : Math.ceil(st * st * 5 - 0.001);
+    bars.forEach((b, i) => b.classList.toggle('on', i < n));
+    fq.textContent = f.toFixed(1);
+    setNoise(S.radioTuned ? 0 : 0.035 + 0.09 * (1 - st));
+  };
+  const sing = () => {
+    noteEls.forEach(e => e.classList.remove('on'));
+    replay.disabled = true;
+    playMelody('radio', {
+      onNote: i => noteEls[i].classList.add('on'),
+      onEnd: () => (replay.disabled = false),
+    });
+  };
+  replay.onclick = sing;
+  if (tuned) {
+    bc.innerHTML = BROADCAST;
+    update();
+    return;
+  }
+  startNoise();
+  update();
+  fr.oninput = () => {
+    radioState.freq = fr.value / 10;
+    if (Math.abs(radioState.freq - FM_TARGET) <= 0.15) {
+      radioState.freq = FM_TARGET;
+      fr.value = FM_TARGET * 10;
+      fr.disabled = true;
+      setFlag('radioTuned');
+      stopNoise();
+      update();
+      sfx.sparkle();
+      bc.innerHTML = BROADCAST;
+      replay.hidden = false;
+      setTimeout(sing, 1500);
+      return;
+    }
+    update();
+  };
+}
+
+/* ---------- 八音盒 ---------- */
+function openBoxModal() {
+  const keys = NOTES.map((n, i) => `<button data-i="${i}" style="background:${n.c};height:${120 - i * 11}px">${n.n}</button>`).join('');
+  const s = openModal(`
+    <h2>🎵 小八音盒</h2>
+    <p class="sub">盒盖上刻着一行小字：<br>「弹出那首<b>睡前歌的开头</b>（七个音），我就为你打开。」</p>
+    <div class="slots7">${'<i></i>'.repeat(7)}</div>
+    <div class="xylo">${keys}</div>
+    <div class="row"><button class="btn" id="clr">清空</button></div>
+    <div class="msg"></div>
+  `);
+  const slots = s.querySelectorAll('.slots7 i'), msg = s.querySelector('.msg');
+  let seq = [], locked = false;
+  const render = () => slots.forEach((el, i) => {
+    el.className = seq[i] !== undefined ? 'f' : '';
+    el.style.background = seq[i] !== undefined ? NOTES[seq[i]].c : '';
+  });
+  s.querySelector('#clr').onclick = () => { if (!locked) { seq = []; render(); msg.textContent = ''; } };
+  s.querySelectorAll('.xylo button').forEach(b => (b.onclick = () => {
+    if (locked) return;
+    const i = +b.dataset.i;
+    tone(NOTES[i].f * 2, 0.5, { type: 'sine', vol: 0.14 });
+    tone(NOTES[i].f * 4, 0.15, { type: 'sine', vol: 0.03 });
+    b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 120);
+    seq.push(i);
+    msg.textContent = '';
+    render();
+    if (seq.length < 7) return;
+    locked = true;
+    if (seq.every((n, k) => NOTES[n].f === BOX_ANSWER[k])) {
+      msg.style.color = '#5e9c7c';
+      msg.textContent = '♪ 叮——盒盖松开了！';
+      setTimeout(() => { closeModal(); openBox(); }, 900);
+    } else {
+      setTimeout(() => { shake(sheet); wrong(); msg.textContent = '旋律不太对……再想想那首歌。'; }, 300);
+      setTimeout(() => { seq = []; render(); locked = false; }, 1100);
+    }
+  }));
+}
+
+/* ---------- 结局 ---------- */
+function photoSVG() {
+  return `<svg viewBox="0 0 300 210" class="photo">
+    <defs><clipPath id="pc"><rect x="18" y="18" width="264" height="150" rx="6"/></clipPath></defs>
+    <rect x="4" y="4" width="292" height="202" rx="10" fill="#fffaf1" stroke="#3d3030" stroke-width="4"/>
+    <g clip-path="url(#pc)">
+      <rect x="18" y="18" width="264" height="150" fill="#f6dcc0"/>
+      <circle cx="244" cy="50" r="18" fill="#f2cc8f" stroke="#3d3030" stroke-width="3"/>
+      <rect x="18" y="140" width="264" height="30" fill="#7fb7a4"/>
+      <ellipse cx="92" cy="168" rx="40" ry="46" fill="#b56576" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="92" cy="94" r="24" fill="#fde3cf" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="92" cy="66" r="12" fill="#e6e0da" stroke="#3d3030" stroke-width="3"/>
+      <path d="M70 88 q22 -22 44 0" fill="#e6e0da" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="84" cy="96" r="6" fill="none" stroke="#3d3030" stroke-width="2.5"/><circle cx="100" cy="96" r="6" fill="none" stroke="#3d3030" stroke-width="2.5"/>
+      <path d="M85 106 q7 6 14 0" fill="none" stroke="#3d3030" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="160" cy="170" rx="28" ry="34" fill="#98c1d9" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="160" cy="116" r="19" fill="#fde3cf" stroke="#3d3030" stroke-width="3"/>
+      <path d="M141 113 q19 -24 38 0 q-8 -8 -19 -6 q-11 -2 -19 6z" fill="#5b4636" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="153" cy="118" r="2.5" fill="#3d3030"/><circle cx="167" cy="118" r="2.5" fill="#3d3030"/>
+      <path d="M154 126 q6 5 12 0" fill="none" stroke="#3d3030" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="220" cy="156" rx="30" ry="17" fill="#f0a35e" stroke="#3d3030" stroke-width="3"/>
+      <path d="M232 128 l4 -14 l8 10 l8 -10 l4 14z" fill="#f0a35e" stroke="#3d3030" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="244" cy="138" r="15" fill="#f0a35e" stroke="#3d3030" stroke-width="3"/>
+      <path d="M237 137 q3 -3 6 0 M247 137 q3 -3 6 0" fill="none" stroke="#3d3030" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="128" y="62" font-size="18">♥</text><text x="196" y="96" font-size="14">♪</text>
+    </g>
+    <rect x="18" y="18" width="264" height="150" rx="6" fill="none" stroke="#3d3030" stroke-width="3"/>
+    <text x="150" y="192" text-anchor="middle" font-size="14" font-weight="700" fill="#3d3030">我们 · 和团子</text>
+  </svg>`;
+}
+function showEnding() {
+  const stars = S.hints === 0 ? '★★★' : S.hints <= 3 ? '★★☆' : '★☆☆';
+  const s = openModal(`
+    <h2>🎁 你找到了奶奶的礼物</h2>
+    ${photoSVG()}
+    <div class="letter" style="font-size:14px">
+      小家伙，你找到啦！<br>
+      这首《小星星》，是你小时候每晚都要听着才肯睡的歌。<br>
+      照片里是我们俩和团子的第一张合影。<br>
+      柜子和团子都交给你啦，要好好照顾它们哦。
+      <div class="sign">—— 奶奶</div>
+    </div>
+    <div class="stats">
+      <div>用时<b>${fmtTime(S.time)}</b></div>
+      <div>使用提示<b>${S.hints} 次</b></div>
+      <div>评价<b style="color:#e0a21b">${stars}</b></div>
+    </div>
+    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn primary" id="again">再玩一次</button></div>
+  `);
+  s.querySelector('#stay').onclick = closeModal;
+  s.querySelector('#again').onclick = restart;
+  updateHud();
+}
+function restart() {
+  localStorage.removeItem(SAVE_KEY);
+  location.reload();
+}
+$('#btnReset').addEventListener('click', () => {
+  if (confirm('确定要重新开始吗？当前进度会被清空。')) restart();
+});
+
+/* =========================================================
+ * 拾取 / 悬停 / 点击
+ * ======================================================= */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const tipEl = $('#tip');
+const isShown = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+function pick(cx, cy) {
+  ndc.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObject(world, true).find(h => isShown(h.object));
+  for (let o = hit?.object; o; o = o.parent) if (o.userData.info) return o;
+  return null; // 被柜门等遮挡时不会穿透选中
+}
+const tipText = info => (selected ? `对「${info.name}」使用 ${ITEMS[selected].icon}` : info.tip ? info.tip() : info.name);
+
+let hovered = null;
+function setHover(o) {
+  if (hovered === o) return;
+  if (hovered) hovered.userData.info.outlines.forEach(m => { m.uniforms.color.value.set(INK); m.uniforms.thickness.value = LINE; });
+  hovered = o;
+  if (o) o.userData.info.outlines.forEach(m => { m.uniforms.color.value.set(HILITE); m.uniforms.thickness.value = LINE_HOVER; });
+  renderer.domElement.style.cursor = o ? 'pointer' : 'grab';
+  if (o) {
+    tipEl.textContent = tipText(o.userData.info);
+    tipEl.classList.add('show');
+  } else tipEl.classList.remove('show');
+}
+
+let down = null;
+const el = renderer.domElement;
+el.style.cursor = 'grab';
+el.addEventListener('pointerdown', e => (down = { x: e.clientX, y: e.clientY }));
+el.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  tipEl.style.left = e.clientX + 16 + 'px';
+  tipEl.style.top = e.clientY + 14 + 'px';
+  if (e.buttons) return setHover(null);
+  setHover(pick(e.clientX, e.clientY));
+});
+el.addEventListener('pointerleave', () => setHover(null));
+el.addEventListener('pointerup', e => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+  down = null;
+  if (moved > 6) return;
+  const o = pick(e.clientX, e.clientY);
+  if (o) activate(o);
+  else if (selected) select(null);
+});
+
+function activate(o) {
+  const info = o.userData.info;
+  audio();
+  if (selected) {
+    const it = ITEMS[selected];
+    if (!info.onUse?.(selected)) {
+      tone(200, 0.15, { type: 'triangle', vol: 0.1 });
+      say(it.icon + ' ' + it.name, `在「${info.name}」上好像用不上……`);
+    }
+  } else {
+    const handled = info.onClick();
+    if (!handled && info.desc) say(info.name, typeof info.desc === 'function' ? info.desc() : info.desc);
+  }
+  if (hovered === o) tipEl.textContent = tipText(info);
+}
+
+/* ---------- 工具栏 ---------- */
+document.getElementById('btnView').addEventListener('click', () => {
+  const p0 = camera.position.clone(), t0 = controls.target.clone();
+  tween(0.9, p => { camera.position.lerpVectors(p0, HOME, p); controls.target.lerpVectors(t0, TARGET, p); }, { id: 'cam' });
+});
+const btnSound = document.getElementById('btnSound');
+btnSound.addEventListener('click', () => {
+  muted = !muted;
+  btnSound.firstChild.textContent = muted ? '🔇' : '🔊';
+  if (muted) stopNoise();
+});
+
+/* =========================================================
+ * 读档：恢复场景状态
+ * ======================================================= */
+function applyState() {
+  if (S.gotKey) clockState.h = clockState.m = 0;
+  if (S.doorsUnlocked) { padlock.visible = false; doors.forEach(d => setDoor(d, true, true)); }
+  if (S.gotBulb) jarBulb.visible = false;
+  if (S.lampFixed) { lampBulb.visible = true; setLamp(true, true); }
+  if (S.drawerUnlocked) { comboLock.visible = false; setDrawer(true, true); }
+  if (S.radioTuned) radioState.freq = FM_TARGET;
+  if (S.catFed) { cat.position.x = CAT_X1; musicBox.visible = true; }
+  if (S.boxOpen) boxLid.rotation.x = -1.9;
+  updateHud();
+  updateInv();
+}
+applyState();
+
+/* =========================================================
+ * 主循环
+ * ======================================================= */
+function onResize() {
+  camera.aspect = innerWidth / innerHeight;
+  // 窄屏时加大视角，保证柜子（含打开的门）横向放得下
+  const need = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) / camera.aspect);
+  camera.fov = Math.max(32, THREE.MathUtils.radToDeg(need));
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+addEventListener('resize', onResize);
+onResize();
+
+// 入场：柜子从天而降
+cab.position.y = 4;
+tween(1.1, p => (cab.position.y = 4 * (1 - p)), { ease: ease.bounce, delay: 0.25 });
+document.getElementById('loading').classList.add('hide');
+setTimeout(() => {
+  if (!S.introSeen) openLetter();
+  else if (S.done) say('欢迎回来', '奶奶的礼物已经找到啦。点八音盒可以重温结局，点「重来」可以再玩一次。');
+  else say('欢迎回来', '进度已自动保存。卡住了可以点右上角的「💡 提示」。');
+}, 1500);
+
+const clk = new THREE.Clock();
+const headV = new THREE.Vector3();
+function loop() {
+  const dt = Math.min(clk.getDelta(), 0.05);
+  const t = clk.elapsedTime;
+  updateTweens(dt);
+  updateFx(dt);
+
+  // 闹钟：解开前停在玩家拨的时间，解开后走真实时间
+  let h, m;
+  if (S.gotKey) {
+    const now = new Date();
+    m = now.getMinutes() + now.getSeconds() / 60;
+    h = (now.getHours() % 12) + m / 60;
+  } else { h = clockState.h; m = clockState.m; }
+  hourHand.rotation.z = -(h / 12) * Math.PI * 2 - clockState.spin;
+  minHand.rotation.z = -(m / 60) * Math.PI * 2 - clockState.spin * 12;
+
+  // 地球仪
+  globeSpin.rotation.y += globeState.v * dt;
+  globeState.v = 0.25 + (globeState.v - 0.25) * Math.exp(-1.2 * dt);
+
+  // 收音机：指针跟随频率，放歌时跳动
+  needle.position.x = needleX(radioState.freq);
+  if (music.on === 'radio') {
+    const b = Math.abs(Math.sin(t * Math.PI / music.beat));
+    radioBody.scale.set(1 + b * 0.025, 1 - b * 0.04 + 0.02, 1);
+  } else radioBody.scale.lerp(tmpV.set(1, 1, 1), 0.2);
+
+  // 猫：呼吸 + 摇尾巴 + Zzz
+  catTail.rotation.y = Math.sin(t * 1.3) * 0.08;
+  if (!catState.awake) {
+    catBody.scale.y = 1 + Math.sin(t * 2.2) * 0.04;
+    catState.zTimer -= dt;
+    if (drawer.userData.open && catState.zTimer <= 0) {
+      catState.zTimer = 1.4;
+      spawnText(Math.random() > 0.5 ? 'Z' : 'z', '#98c1d9', worldPos(catHead, 0.22).add(tmpV.set(0.08, 0, 0)), { size: 0.2, rise: 0.55, drift: 0.3, life: 2 });
+    }
+  }
+
+  // 猫的对话气泡跟随头部
+  if (bubble.classList.contains('show')) {
+    catHead.getWorldPosition(headV).y += 0.3;
+    headV.project(camera);
+    bubble.style.left = (headV.x * 0.5 + 0.5) * innerWidth + 'px';
+    bubble.style.top = (-headV.y * 0.5 + 0.5) * innerHeight + 'px';
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+loop();
+
+</script>
+</body>
+</html>
