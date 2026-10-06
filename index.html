@@ -27,6 +27,7 @@
   canvas { position: fixed; inset: 0; display: block; outline: none; z-index: 1; touch-action: none; }
   button { font: inherit; color: var(--ink); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   html, body { overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  .slot, #modal, #tutorial, input[type=range] { touch-action: manipulation; }
 
   /* 背景装饰 */
   .deco { position: fixed; pointer-events: none; z-index: 0; border-radius: 50%; }
@@ -48,7 +49,8 @@
   .title p { margin-top: 8px; font-size: 14px; opacity: .75; letter-spacing: 1px; }
 
   .pill { background: var(--paper); border: 2.5px solid var(--ink); border-radius: 999px; box-shadow: 3px 3px 0 var(--ink); }
-  .hud { right: 26px; top: 26px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  .hud { right: 26px; top: 26px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: none; }
+  .hud .pill, .hud .btn { pointer-events: auto; }
   .hudrow { display: flex; gap: 10px; align-items: center; }
   .progress { display: flex; gap: 4px; padding: 6px 12px; }
   .progress span { font-size: 18px; opacity: .22; filter: grayscale(1); transition: opacity .4s, filter .4s, transform .4s; }
@@ -233,6 +235,13 @@
   .stats { display: flex; justify-content: center; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; }
   .stats div { background: #f6eddd; border: 2px solid var(--ink); border-radius: 12px; padding: 6px 12px; font-size: 13px; }
   .stats b { display: block; font-size: 17px; }
+  .score { text-align: center; margin: 10px 0 2px; }
+  .score b { font-size: 46px; line-height: 1; color: #e0a21b; -webkit-text-stroke: 1.5px var(--ink); }
+  .score small { display: block; font-size: 12px; opacity: .7; margin-top: 4px; }
+  #btnHint { position: relative; }
+  #btnHint .hn { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: #fff;
+    border: 2px solid var(--ink); font-size: 11px; font-weight: 800; line-height: 14px; text-align: center; }
+  #btnHint .hn.zero { background: #b8ada0; }
 
   #loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; font-weight: 700; letter-spacing: 2px;
     background: var(--bg); transition: opacity .5s; }
@@ -277,7 +286,7 @@
     .ctrl .btn { padding: 8px 14px; }
     .radio .fq { font-size: 30px; }
     .tune-row .btn.small { width: 40px; height: 40px; padding: 0; }
-    .dot1 { width: 44px; height: 44px; top: 30%; }
+    .dot1, .dot2 { display: none; }
     .cloud { top: 30%; transform: scale(.7); transform-origin: left top; }
   }
   /* 手机横屏（矮屏） */
@@ -332,7 +341,7 @@
       <div class="pill timer">⏱ <span id="time">00:00</span></div>
     </div>
     <div class="toolbar">
-      <button class="btn" id="btnHint">💡<span class="t"> 提示</span></button>
+      <button class="btn" id="btnHint">💡<span class="t"> 提示</span><span class="hn" id="hintLeft">5</span></button>
       <button class="btn" id="btnHelp">❓<span class="t"> 指引</span></button>
       <button class="btn" id="btnView">🎯<span class="t"> 视角</span></button>
       <button class="btn" id="btnMusic">🎵<span class="t"> 音乐</span></button>
@@ -1823,6 +1832,8 @@ function collectShard(id, pos) {
   if (pos) for (let i = 0; i < 6; i++) setTimeout(() => spawnText(i % 2 ? '✦' : '🧩', '#f2c14e', pos, { size: 0.18, rise: 0.6, drift: 0.6 }), i * 90);
   showToast(`🧩 找到照片碎片 ${n}/3`);
   updateHud();
+  if (n === 3 && S.ch2) setTimeout(() => say('碎片集齐了！', S.ch2done ? '三片碎片都找到了。夜里再去窗边看看那棵老槐树吧……' : '三片碎片都找到了！拼起来像是一张在槐树下拍的照片，背面还有字。等故事讲完再看吧。', '隐藏'), 1600);
+  if (n === 3 && S.ch2 && S.ch2done) redraw(windowTex);
   if (n === 3 && !S.ch2) setTimeout(() => say('碎片集齐了！', S.done ? '三片碎片都找到了。再打开一次八音盒看看吧……' : '三片碎片都找到了！它们好像能拼回某张照片里缺掉的部分。', '隐藏'), 1600);
 }
 
@@ -1848,7 +1859,7 @@ const ITEMS = {
   pen: { icon: '🖋️', name: '钢笔', has: () => S.ch2 && S.gotPen && !S.slots.includes('pen'), desc: '笔尖是金色的，又细又尖。' },
   deskKey: { icon: '🔑', name: '小铜钥匙', has: () => S.ch2 && S.globe2 && !S.keyUsed, desc: '比指甲盖大不了多少。' },
   letter2: { icon: '💌', name: '旧信', has: () => S.ch2 && S.gotLetter2 },
-  photo: { icon: '📷', name: '旧照片', has: () => S.ch2 && S.gotPhoto },
+  photo: { icon: '📷', name: '旧照片', has: () => S.ch2 && S.gotPhoto && !S.photoPinned },
   diary: { icon: '📔', name: '爷爷的日记', has: () => S.ch2 && S.gotDiary },
 };
 const COMBOS = [
@@ -1955,8 +1966,27 @@ function updateHud() {
   const sh = $('#shards');
   sh.textContent = `🧩 ${n}/3`;
   sh.style.opacity = n ? 1 : 0.45;
+  const left = HINT_MAX - (S.ch2 ? S.hints2 : S.hints), hl = $('#hintLeft');
+  hl.textContent = Math.max(0, left);
+  hl.classList.toggle('zero', left <= 0);
 }
 const fmtTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+/* ---------- 提示次数 / 评分 ---------- */
+const HINT_MAX = 5;                         // 每章最多 5 次提示
+const PAR = { 1: 10 * 60, 2: 15 * 60 };     // 满分用时：第一章 10 分钟，第二章 15 分钟
+function calcScore(time, hints, par) {
+  const overMin = Math.max(0, Math.ceil((time - par) / 60));
+  const timeCut = Math.min(50, overMin * 2); // 超时每分钟扣 2 分，最多扣 50
+  const hintCut = hints * 5;                 // 每用一次提示扣 5 分
+  const score = Math.max(0, 100 - timeCut - hintCut);
+  const label = score === 100 ? '完美通关！' : score >= 90 ? '太厉害了' : score >= 75 ? '很棒' : score >= 60 ? '不错哦' : '顺利通关';
+  return { score, timeCut, hintCut, label };
+}
+function scoreHTML(time, hints, par) {
+  const r = calcScore(time, hints, par);
+  const cuts = [r.timeCut && `超时扣 ${r.timeCut}`, r.hintCut && `提示扣 ${r.hintCut}`].filter(Boolean).join(' · ');
+  return `<div class="score"><b>${r.score}</b> 分 · ${r.label}<small>${cuts || `${Math.round(par / 60)} 分钟内完成，且没有用提示`}</small></div>`;
+}
 setInterval(() => {
   if (document.hidden) return;
   if (S.ch2) {
@@ -2019,8 +2049,9 @@ const HINTS2 = {
   lens: ['地球仪上的刻度太细了，得找个能放大的东西。', '笔筒里插着一把放大镜。拿到后，选中 🔍 再点地球仪。'],
   globe: ['夜里笔记本上的字是一组经纬度。', '用放大镜点地球仪，把纬度拨到「北纬 30°」，经度拨到「东经 120°」——杭州。'],
   key: ['地球仪里掉出的小钥匙，能开哪个锁？', '选中 🔑，点书桌右边最上面那格抽屉，再点抽屉拿出照片。'],
+  pin: ['照片背面画的是一个影子。台灯正对着墙，灯前还有几个木垫……', '点背包里的 📷 打开照片，按「立在灯座旁」；或者点灯前的木垫，在弹窗里把照片立上。'],
   items: ['影子需要三样东西：一样爷爷「看」用的，一样奶奶喝茶用的，一样爷爷写字用的。', '老花镜在桌子左边，茶杯在右前方（先读杯底再拿起来），钢笔在中间抽屉里。'],
-  shadow: ['照片背面画着影子的样子；印章纸上写着谁放高处、谁放灯前。夜里关上灯，墙上还有一道虚线可以对照。', '晚上开着台灯：A（书堆上）放老花镜、正面朝灯；B 放茶杯，转到把手藏到后面；C 放钢笔，转成斜向右上的箭。'],
+  shadow: ['照片已经立在灯座旁了；印章纸上写着谁放高处、谁放灯前。夜里关上灯，墙上还有一道虚线可以对照。', '晚上开着台灯：A（书堆上）放老花镜、正面朝灯；B 放茶杯，转到把手藏到后面；C 放钢笔，转成斜向右上的箭。'],
   frame: ['墙上的西湖小画弹开了。', '点开墙上的画框，拿出里面的日记，读到最后一页。'],
   diary: ['日记最后一页说了什么？', '读完日记的五页。'],
   window: ['「想我的时候，就在夜里看看窗外那棵老槐树。」', '用日晷切换到夜晚，然后点墙右边的窗户。'],
@@ -2032,7 +2063,7 @@ function stage2() {
   if (!S.sawGlow) return 'night';
   if (!S.globe2) return S.gotLens ? 'globe' : 'lens';
   if (!S.gotPhoto) return 'key';
-  if (!S.shadowSolved) return S.gotCup && S.gotGlasses && S.gotPen ? 'shadow' : 'items';
+  if (!S.shadowSolved) return !S.photoPinned ? 'pin' : S.gotCup && S.gotGlasses && S.gotPen ? 'shadow' : 'items';
   if (!S.gotDiary) return 'frame';
   if (!S.diaryRead) return 'diary';
   if (!S.ch2done) return 'window';
@@ -2043,8 +2074,15 @@ $('#btnHint').addEventListener('click', () => {
   const st = S.ch2 ? stage2() : stage();
   if (!st) return say('已经通关啦', S.ch2 ? '爷爷的故事已经看完了。想再玩可以点「重来」。' : '奶奶的礼物已经被你找到了。想再玩一次可以点「重来」。');
   const lv = S.hintLv[st] || 0;
+  const used = S.ch2 ? S.hints2 : S.hints;
+  if (lv < 2 && used >= HINT_MAX) {
+    // 次数用完：已经看过的提示还能免费再看
+    const seen = lv ? `（上次的提示：${(S.ch2 ? HINTS2 : HINTS)[st][0]}）` : '';
+    say('提示用完了', `这一章的 ${HINT_MAX} 次提示已经全部用掉了，剩下的就靠你自己啦！${seen}`);
+    return;
+  }
   const show = Math.min(lv, 1);
-  if (lv < 2) { S.hintLv[st] = lv + 1; S.ch2 ? S.hints2++ : S.hints++; save(); }
+  if (lv < 2) { S.hintLv[st] = lv + 1; S.ch2 ? S.hints2++ : S.hints++; save(); updateHud(); }
   say(show === 0 ? '小提示' : '大提示', (S.ch2 ? HINTS2 : HINTS)[st][show], `提示 ${show + 1}/2`);
   tone(880, 0.1, { vol: 0.06 }); tone(1175, 0.12, { vol: 0.05, when: 0.08 });
 });
@@ -2409,7 +2447,6 @@ function photoSVG(full) {
   </svg>`;
 }
 function showEnding() {
-  const stars = S.hints === 0 ? '★★★' : S.hints <= 4 ? '★★☆' : '★☆☆';
   const nShard = Object.values(S.shards).filter(Boolean).length, full = nShard === 3;
   const s = openModal(`
     <h2>${full ? '🌈 真结局 · 完整的照片' : '🎁 你找到了奶奶的礼物'}</h2>
@@ -2430,10 +2467,10 @@ function showEnding() {
       : `<p class="sub">照片上缺了三块……好像被人故意撕下来，藏在了柜子周围。（🧩 ${nShard}/3）</p>`}
     <div class="stats">
       <div>用时<b>${fmtTime(S.time)}</b></div>
-      <div>使用提示<b>${S.hints} 次</b></div>
+      <div>使用提示<b>${S.hints}/${HINT_MAX} 次</b></div>
       <div>碎片<b>🧩 ${nShard}/3</b></div>
-      <div>评价<b style="color:#e0a21b">${stars}</b></div>
     </div>
+    ${scoreHTML(S.time, S.hints, PAR[1])}
     <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">再玩一次</button></div>
     <div class="row"><button class="btn primary" id="next">✨ 第二章：爷爷的书桌 →</button></div>
   `);
@@ -2443,12 +2480,22 @@ function showEnding() {
   updateHud();
 }
 function restart() {
-  localStorage.removeItem(SAVE_KEY);
+  // 清空进度，但已经看过的新手指引不再重复播放
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ tutorialSeen: S.tutorialSeen }));
   location.reload();
 }
 $('#btnReset').addEventListener('click', () => {
-  if (S.ch2) { if (confirm('重新开始第二章吗？第二章的进度会被清空（第一章保留）。')) resetCh2(); }
-  else if (confirm('确定要重新开始吗？当前进度会被清空。')) restart();
+  if (!S.ch2) { if (confirm('确定要重新开始吗？当前进度会被清空。')) restart(); return; }
+  const s = openModal(`<h2>↻ 重新开始</h2>
+    <p class="sub">想从哪里重新开始？</p>
+    <div class="row" style="flex-direction:column;gap:12px;align-items:stretch">
+      <button class="btn primary" id="rCh2">📖 只重玩第二章<br><small style="font-weight:400;opacity:.85">第一章进度保留，书桌回到初始状态</small></button>
+      <button class="btn" id="rAll">🏠 整个游戏重新开始<br><small style="font-weight:400;opacity:.75">从奶奶的柜子开始，所有进度清空</small></button>
+      <button class="btn" id="rNo">算了</button>
+    </div>`);
+  s.querySelector('#rCh2').onclick = resetCh2;
+  s.querySelector('#rAll').onclick = () => { if (confirm('确定吗？两章的进度都会被清空。')) restart(); };
+  s.querySelector('#rNo').onclick = closeModal;
 });
 
 /* =========================================================
@@ -2470,7 +2517,7 @@ function pick(cx, cy) {
 function pickNear(cx, cy) {
   const o = pick(cx, cy);
   if (o) return o;
-  for (const r of [10, 20]) for (let i = 0; i < 8; i++) {
+  for (const r of [10, 20, 30]) for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2, h = pick(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
     if (h) return h;
   }
@@ -2496,10 +2543,13 @@ const el = renderer.domElement;
 el.style.cursor = 'grab';
 const touches = new Set();
 el.addEventListener('pointerdown', e => {
+  if (e.isPrimary) touches.clear(); // 第一根手指落下时清掉残留（有时抬手事件会丢）
   touches.add(e.pointerId);
   down = touches.size > 1 ? null : { x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse' };
 });
 el.addEventListener('pointercancel', e => { touches.delete(e.pointerId); down = null; });
+// 触屏轻点后浏览器还会补发一次模拟 click，可能落到刚弹出的窗口按钮上，这里拦掉
+el.addEventListener('touchend', e => e.preventDefault(), { passive: false });
 el.addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse') return;
   tipEl.style.left = e.clientX + 16 + 'px';
@@ -2602,7 +2652,7 @@ btnMusic.addEventListener('click', () => {
 const CH2_DEFAULT = {
   ch2Intro: false, isNight: false, lamp2: false, sawGlow: false, gotLens: false, globe2: false, gotPhoto: false,
   penDrawer: false, gotLetter2: false, gotCup: false, gotGlasses: false, gotPen: false, sealSolved: false,
-  slots: [null, null, null], rots: [0, 0, 0], shadowSolved: false, gotDiary: false, diaryRead: false, ch2done: false,
+  slots: [null, null, null], rots: [0, 0, 0], photoPinned: false, shadowSolved: false, gotDiary: false, diaryRead: false, ch2done: false,
   time2: 0, hints2: 0, sh2: { cup: false, ink: false, sill: false },
 };
 for (const k in CH2_DEFAULT) if (!(k in S)) S[k] = JSON.parse(JSON.stringify(CH2_DEFAULT[k]));
@@ -2752,6 +2802,7 @@ function placeShadowObjs() {
     } else o.visible = false;
   }
 }
+placeShadowObjs(); // 先摆到各自的初始位置，否则会停在书桌原点（桌子底下）
 
 /* ---------- 墙上的影子（画在一张透明贴图上） ---------- */
 const sOff = document.createElement('canvas');
@@ -2831,7 +2882,7 @@ const lit = () => (S.lamp2 ? (S.isNight ? 'night' : 'day') : 'off');
 const stageLook = () => ({
   glow: { night: 0.6, day: 0.12, off: 0 }[lit()],
   alpha: { night: 0.85, day: 0.16, off: 0 }[lit()],
-  outline: S.isNight ? (S.lamp2 ? 0.5 : 0.95) : 0,
+  outline: S.isNight && S.photoPinned ? (S.lamp2 ? 0.5 : 0.95) : 0,
 });
 const wallTex = bigTex(800, 560, (g, c) => drawStage(g, c.width, c.height, stageLook()));
 const wallShadow = flat(2.2, 1.54, wallTex, { depthWrite: false, toneMapped: false });
@@ -2877,7 +2928,7 @@ register(lamp2, {
     setLamp2(!S.lamp2);
     save();
     if (S.lamp2) say('绿罩台灯', S.isNight ? '灯光朝着墙打过去，桌上的东西在墙上投出了清清楚楚的影子。' : '白天太亮了，墙上的影子淡得几乎看不见。');
-    else say('绿罩台灯', S.isNight ? '灯一灭，墙上那道发光的虚线反而更清楚了。' : '啪嗒，关灯。');
+    else say('绿罩台灯', S.isNight && S.photoPinned ? '灯一灭，墙上那道发光的虚线反而更清楚了。' : '啪嗒，关灯。');
     checkShadow(true);
     return true;
   },
@@ -3057,6 +3108,35 @@ register(glassesObj, {
 });
 register(penObj, { name: '钢笔', onClick() { openShadowModal(); return true; } });
 
+/* ---------- 靠在灯座上的旧照片（影子的参照） ---------- */
+const pinnedPhoto = new THREE.Group();
+place(lamp2, pinnedPhoto, 0.27, 0, 0.1);
+{
+  pinnedPhoto.rotation.set(-0.35, -0.3, 0);
+  place(pinnedPhoto, M(rbox(0.2, 0.15, 0.008, 0.003), '#fffaf1'), 0, 0.075, 0);
+  const pic = flat(0.17, 0.12, canvasTex('pinPh', g => {
+    g.fillStyle = '#fffaf1'; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#3d3030'; heartPath(g, 64, 66, 2.6); g.fill();
+    g.strokeStyle = '#3d3030'; g.lineWidth = 6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(20, 112); g.lineTo(108, 24); g.stroke();
+  }));
+  place(pinnedPhoto, pic, 0, 0.075, 0.006);
+}
+pinnedPhoto.visible = false;
+register(pinnedPhoto, { name: '旧照片', tip: () => '影子的参照', onClick() { openPhoto(); return true; } });
+function pinPhoto() {
+  if (S.photoPinned) return false;
+  setFlag('photoPinned');
+  pinnedPhoto.visible = true;
+  select(null); updateInv(); redraw(wallTex);
+  sfx.pop();
+  say('旧照片', S.isNight
+    ? '你把照片立在灯座旁边。对着照片比划了一下——墙上浮现出一道淡淡的、发光的虚线，正好是照片背面那个影子的轮廓。'
+    : '你把照片立在灯座旁边，背面朝着墙。等天黑了，也许能对照着它在墙上摆出影子。', '进展');
+  checkShadow(true);
+  return true;
+}
+
 /* ---------- 影子舞台 ---------- */
 register(shStage, {
   name: '书堆和木垫',
@@ -3168,9 +3248,15 @@ const windowTex = bigTex(256, 320, g => {
   [[160, 140, 64], [118, 170, 42], [204, 168, 44], [160, 100, 44]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
   if (end) {
     g.fillStyle = '#fff1c4'; g.shadowColor = '#ffd27a'; g.shadowBlur = 16;
-    for (const [x, h] of [[110, 1], [132, 0.92]]) {
+    for (const [x, h] of [[74, 1], [98, 0.92]]) {
       g.beginPath(); g.arc(x, 222 - 30 * h, 9 * h, 0, 7); g.fill();
       g.beginPath(); g.moveTo(x - 10 * h, 268); g.quadraticCurveTo(x - 12 * h, 222 - 18 * h, x, 222 - 20 * h); g.quadraticCurveTo(x + 12 * h, 222 - 18 * h, x + 10 * h, 268); g.fill();
+    }
+    if (Object.values(S.sh2).every(Boolean)) {
+      // 碎片集齐：树下多了两把椅子的剪影和一颗小心
+      g.fillStyle = '#ffe9b0'; heartPath(g, 86, 170, 0.55); g.fill();
+      g.shadowBlur = 0; g.fillStyle = 'rgba(255,241,196,.55)';
+      for (const x of [52, 104]) { g.fillRect(x, 248, 16, 4); g.fillRect(x + (x < 86 ? 0 : 12), 232, 4, 36); }
     }
     g.shadowBlur = 0;
   }
@@ -3509,8 +3595,10 @@ function openGlobeModal() {
 function openPhoto() {
   let back = false;
   const s = openModal(`<h2>📷 抽屉里的照片</h2><div id="ph"></div>
-    <div class="row"><button class="btn" id="flip">翻到背面</button><button class="btn primary" id="ok">收好</button></div>`);
+    <div class="row"><button class="btn" id="flip">翻到背面</button>${S.ch2 && !S.photoPinned ? '<button class="btn" id="pin">🕯️ 立在灯座旁</button>' : ''}<button class="btn primary" id="ok">收好</button></div>`);
   const ph = s.querySelector('#ph');
+  const pinB = s.querySelector('#pin');
+  if (pinB) pinB.onclick = () => { closeModal(); pinPhoto(); };
   const draw = () => {
     ph.innerHTML = back
       ? `<svg viewBox="0 0 260 200" class="photo" style="max-width:260px">
@@ -3541,6 +3629,10 @@ function shadowOK() {
 function checkShadow(talk) {
   if (S.shadowSolved || !S.ch2) return;
   if (!(S.isNight && S.lamp2 && shadowOK())) return;
+  if (!S.photoPinned) {
+    if (!S.shadowNudged) { S.shadowNudged = true; save(); setTimeout(() => say('墙上的影子', '影子好像拼成了什么……可你说不上来它「应该」是什么样子。爷爷会不会在哪儿留下过参照？'), 500); }
+    return;
+  }
   setFlag('shadowSolved');
   closeModal();
   redraw(wallTex);
@@ -3553,11 +3645,12 @@ function checkShadow(talk) {
 function openShadowModal() {
   const avail = ['glasses', 'cup', 'pen'].filter(k => ITEMS[k].has());
   const s = openModal(`<h2>🕯️ 灯前的影子</h2>
-    <p class="sub">${S.isNight ? (S.lamp2 ? '灯亮着，墙上的影子很清楚。' : '台灯没开，墙上只有一道发光的虚线。') : '白天光太亮，影子几乎看不见。'}</p>
+    <p class="sub">${!S.photoPinned ? (S.isNight && S.lamp2 ? '影子投在墙上了，可是该拼成什么样子呢？要是有个参照就好了。' : '墙上空空的。') + ' ' : ''}${S.isNight ? (S.lamp2 ? '灯亮着，墙上的影子很清楚。' : S.photoPinned ? '台灯没开，墙上只有一道发光的虚线。' : '台灯没开。') : '白天光太亮，影子几乎看不见。'}</p>
     <canvas id="mini" width="400" height="280" class="mini"></canvas>
     <div class="slots">${S.slots.map((it, i) => `<div class="sl"><b>${'ABC'[i]}</b><span>${SLOT_NAME[i]}</span>
       ${it ? `<em>${ITEMS[it].icon} ${SH_NAME[it]}</em><button class="btn small" data-r="${i}">↻ 转</button><button class="btn small" data-x="${i}">取下</button>`
         : avail.length ? avail.map(k => `<button class="btn small" data-p="${i}" data-k="${k}">${ITEMS[k].icon}</button>`).join('') : '<em style="opacity:.5">空</em>'}</div>`).join('')}</div>
+    ${S.gotPhoto && !S.photoPinned ? '<div class="row"><button class="btn" id="pinb">📷 把照片立在灯座旁当参照</button></div>' : ''}
     <div class="row"><button class="btn" id="lampb">${S.lamp2 ? '关台灯' : '开台灯'}</button><button class="btn primary" id="ok">好了</button></div>`);
   const mini = s.querySelector('#mini').getContext('2d');
   drawStage(mini, 400, 280, { ...stageLook(), bg: S.isNight ? '#2c2f45' : '#efe2c9' });
@@ -3565,6 +3658,8 @@ function openShadowModal() {
   s.querySelectorAll('[data-r]').forEach(b => (b.onclick = () => { const i = +b.dataset.r; S.rots[i] = (S.rots[i] + 1) % SH_ROTS[S.slots[i]]; tone(700, 0.05, { vol: 0.05 }); re(); }));
   s.querySelectorAll('[data-x]').forEach(b => (b.onclick = () => { S.slots[+b.dataset.x] = null; sfx.click(); updateInv(); re(); }));
   s.querySelectorAll('[data-p]').forEach(b => (b.onclick = () => { const i = +b.dataset.p; S.slots[i] = b.dataset.k; S.rots[i] = 0; sfx.pop(); updateInv(); re(); }));
+  const pinb = s.querySelector('#pinb');
+  if (pinb) pinb.onclick = () => { closeModal(); pinPhoto(); };
   s.querySelector('#lampb').onclick = () => { setLamp2(!S.lamp2); sfx.click(); save(); openShadowModal(); checkShadow(); };
   s.querySelector('#ok').onclick = closeModal;
 }
@@ -3604,17 +3699,43 @@ function windowEnding() {
   setTimeout(() => say('', '老槐树下，有两个淡淡的、发着光的身影，并肩坐着。'), 1800);
   setTimeout(showEnding2, 5200);
 }
+function photo2SVG() {
+  const tear = (x, y, w, h) => `<path d="M${x} ${y} l${w * 0.35} ${h * 0.1} l${w * 0.3} -${h * 0.12} l${w * 0.35} ${h * 0.14} l-${w * 0.06} ${h * 0.45} l${w * 0.08} ${h * 0.43} l-${w * 0.45} -${h * 0.06} l-${w * 0.3} ${h * 0.1} l-${w * 0.25} -${h * 0.14} l${w * 0.05} -${h * 0.4}z" fill="#efe6d8" stroke="#3d3030" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+  const holes = [!S.sh2.ink && tear(30, 26, 72, 58), !S.sh2.cup && tear(196, 30, 70, 56), !S.sh2.sill && tear(112, 100, 76, 62)].filter(Boolean).join('');
+  const P = (x, y, hair, body) => `<ellipse cx="${x}" cy="${y + 40}" rx="20" ry="26" fill="${body}" stroke="#3d3030" stroke-width="3"/><circle cx="${x}" cy="${y}" r="15" fill="#fde3cf" stroke="#3d3030" stroke-width="3"/>${hair}`;
+  return `<svg viewBox="0 0 300 210" class="photo" style="filter:sepia(.35)">
+    <defs><clipPath id="pc2"><rect x="18" y="18" width="264" height="150" rx="6"/></clipPath></defs>
+    <rect x="4" y="4" width="292" height="202" rx="10" fill="#fffaf1" stroke="#3d3030" stroke-width="4"/>
+    <g clip-path="url(#pc2)">
+      <rect x="18" y="18" width="264" height="150" fill="#e9dcbc"/>
+      <rect x="18" y="140" width="264" height="30" fill="#a9b98a"/>
+      <rect x="141" y="40" width="18" height="110" fill="#7a4e37" stroke="#3d3030" stroke-width="3"/>
+      <circle cx="150" cy="44" r="46" fill="#7fae7c" stroke="#3d3030" stroke-width="3"/><circle cx="104" cy="66" r="30" fill="#7fae7c" stroke="#3d3030" stroke-width="3"/><circle cx="198" cy="64" r="32" fill="#7fae7c" stroke="#3d3030" stroke-width="3"/>
+      <rect x="66" y="128" width="44" height="8" fill="#8a5a3c" stroke="#3d3030" stroke-width="2.5"/><rect x="66" y="98" width="6" height="56" fill="#8a5a3c" stroke="#3d3030" stroke-width="2.5"/>
+      <rect x="190" y="128" width="44" height="8" fill="#8a5a3c" stroke="#3d3030" stroke-width="2.5"/><rect x="228" y="98" width="6" height="56" fill="#8a5a3c" stroke="#3d3030" stroke-width="2.5"/>
+      ${P(88, 92, '<circle cx="82" cy="93" r="5" fill="none" stroke="#3d3030" stroke-width="2"/><circle cx="94" cy="93" r="5" fill="none" stroke="#3d3030" stroke-width="2"/><path d="M74 86 q14 -14 28 0" fill="none" stroke="#e6e0da" stroke-width="5"/>', '#5b6f8a')}
+      ${P(212, 92, '<path d="M197 90 q15 -22 30 0 q-6 -8 -15 -6 q-9 -2 -15 6z" fill="#e6e0da" stroke="#3d3030" stroke-width="2.5"/>', '#b56576')}
+      <circle cx="150" cy="128" r="11" fill="#fde3cf" stroke="#3d3030" stroke-width="3"/><ellipse cx="150" cy="152" rx="13" ry="15" fill="#f2cc8f" stroke="#3d3030" stroke-width="3"/>
+      <text x="141" y="110" font-size="16" fill="#e07a5f">♥</text>
+      ${holes}
+    </g>
+    <rect x="18" y="18" width="264" height="150" rx="6" fill="none" stroke="#3d3030" stroke-width="3"/>
+    <text x="150" y="192" text-anchor="middle" font-size="14" font-weight="700" fill="#3d3030">${Object.values(S.sh2).every(Boolean) ? '老槐树下 · 我们三个' : '老槐树下 · 缺了几块'}</text>
+  </svg>`;
+}
 function showEnding2() {
   const n = Object.values(S.sh2).filter(Boolean).length, full = n === 3;
-  const stars = S.hints2 === 0 ? '★★★' : S.hints2 <= 4 ? '★★☆' : '★☆☆';
   const s = openModal(`<h2>${full ? '🌙 真结局 · 树下的两个人' : '🌙 他们一直都在'}</h2>
+    ${n ? photo2SVG() : ''}
     <div class="letter" style="font-size:14.5px;text-align:center;line-height:2">
       窗外，老槐树下。<br>两个身影并肩坐着，像很多很多年前那样。<br><b style="font-size:18px">他们一直都在。</b>
     </div>
     ${full ? `<div class="letter" style="font-size:14px;background:#fff4d6">
-      三片碎片拼起来，是一张小小的合影：<br>槐树下两把椅子，一把坐着爷爷，一把坐着奶奶，中间蹲着一个小小的你。<br>背面写着：「等你长大，再来听我们讲故事。」</div>`
-      : `<p class="sub">书桌周围好像还藏着几片照片碎片。（🧩 ${n}/3）</p>`}
-    <div class="stats"><div>用时<b>${fmtTime(S.time2)}</b></div><div>使用提示<b>${S.hints2} 次</b></div><div>碎片<b>🧩 ${n}/3</b></div><div>评价<b style="color:#e0a21b">${stars}</b></div></div>
+      三片碎片拼起来，是一张小小的合影：<br>槐树下两把椅子，一把坐着爷爷，一把坐着奶奶，中间蹲着一个小小的你。<br>背面写着：「等你长大，再来听我们讲故事。」<br>
+      <span style="opacity:.75">……你抬头看窗外，树下好像真的多了两把椅子。</span></div>`
+      : `<p class="sub">${n ? '照片还缺了几块……' : ''}书桌周围好像还藏着几片照片碎片。（🧩 ${n}/3）</p>`}
+    <div class="stats"><div>用时<b>${fmtTime(S.time2)}</b></div><div>使用提示<b>${S.hints2}/${HINT_MAX} 次</b></div><div>碎片<b>🧩 ${n}/3</b></div></div>
+    ${scoreHTML(S.time2, S.hints2, PAR[2])}
     <div class="row"><button class="btn" id="stay">留在书房</button><button class="btn" id="back1">回到奶奶的柜子</button><button class="btn primary" id="again">重玩第二章</button></div>`);
   s.querySelector('#stay').onclick = closeModal;
   s.querySelector('#back1').onclick = () => { S.ch2 = false; save(); location.reload(); };
@@ -3623,14 +3744,15 @@ function showEnding2() {
 }
 function resetCh2() {
   for (const k in CH2_DEFAULT) S[k] = JSON.parse(JSON.stringify(CH2_DEFAULT[k]));
-  delete S.windowEnd; delete S.keyUsed; delete S.sawNight;
+  delete S.windowEnd; delete S.keyUsed; delete S.sawNight; delete S.shadowNudged;
+  for (const k in HINTS2) delete S.hintLv[k];
   S.ch2 = true; save(); location.reload();
 }
 function enterCh2() {
   closeModal();
   S.ch2 = true; save();
   sfx.whoosh();
-  tween(0.7, p => { cab.position.y = -6 * p * p; }, { ease: ease.linear, onDone: () => { setChapter(true); desk.position.y = 6; tween(1.1, p => (desk.position.y = 6 * (1 - p)), { ease: ease.bounce }); } });
+  tween(0.7, p => { cab.position.y = -6 * p * p; }, { ease: ease.linear, onDone: () => { applyState2(); desk.position.y = 6; tween(1.1, p => (desk.position.y = 6 * (1 - p)), { ease: ease.bounce }); } });
   setTimeout(openGmNote, 2200);
 }
 
@@ -3665,6 +3787,8 @@ function applyState2() {
   cupShard.visible = S.gotCup && !S.sh2.cup;
   if (S.shadowSolved) openPicFrame(true);
   diaryMesh.visible = !S.gotDiary;
+  if (S.shadowSolved) S.photoPinned = true; // 旧存档：影子已拼好就当照片已立好
+  pinnedPhoto.visible = S.photoPinned;
   refreshShadow();
 }
 
@@ -3828,14 +3952,15 @@ function loop() {
   if (!catState.awake) {
     catBody.scale.y = 1 + Math.sin(t * 2.2) * 0.04;
     catState.zTimer -= dt;
-    if (drawer.userData.open && catState.zTimer <= 0) {
+    if (drawer.userData.open && !S.ch2 && catState.zTimer <= 0) {
       catState.zTimer = 1.4;
       spawnText(Math.random() > 0.5 ? 'Z' : 'z', '#98c1d9', worldPos(catHead, 0.22).add(tmpV.set(0.08, 0, 0)), { size: 0.2, rise: 0.55, drift: 0.3, life: 2 });
     }
   }
 
   // 猫的对话气泡跟随头部
-  if (bubble.classList.contains('show')) {
+  if (S.ch2) bubble.classList.remove('show');
+  else if (bubble.classList.contains('show')) {
     catHead.getWorldPosition(headV).y += 0.3;
     headV.project(camera);
     bubble.style.left = (headV.x * 0.5 + 0.5) * innerWidth + 'px';
@@ -3853,7 +3978,7 @@ function loop() {
     const near = 1 - THREE.MathUtils.smoothstep(ang, 0.12, 0.6);
     const want = S.noteFull ? 0.12 + 0.88 * near : 0;
     doodleMat.uniforms.alpha.value += (want - doodleMat.uniforms.alpha.value) * Math.min(1, dt * 4);
-    if (ang < 0.11 && dr < 1.6 && S.noteFull && !modal.classList.contains('show')) {
+    if (ang < 0.11 && dr < 1.6 && S.noteFull && !S.ch2 && !modal.classList.contains('show')) {
       viewHold += dt;
       if (viewHold > 0.5) sawDoodle();
     } else viewHold = 0;
