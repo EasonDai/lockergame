@@ -4,8 +4,32 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="爷爷奶奶的旧屋" />
+<meta name="application-name" content="爷爷奶奶的旧屋" />
 <meta name="theme-color" content="#f4ead8" />
-<title>奶奶的柜子 · 3D 解谜小游戏</title>
+<title>爷爷奶奶的旧屋 · 3D 解谜小游戏</title>
+<meta name="description" content="温馨向 3D 网页解谜小游戏：回到爷爷奶奶的旧屋，打开奶奶的绿色木柜、坐到爷爷的旧书桌前，找出藏在旧家具里的礼物与心意。打开浏览器就能玩。" />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/favicon.ico" sizes="any" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="canonical" href="https://easondai.github.io/lockergame/" />
+<!-- 分享卡片（OG / Twitter）。换域名时记得同时改这里的 og:url / og:image / twitter:image -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://easondai.github.io/lockergame/" />
+<meta property="og:site_name" content="爷爷奶奶的旧屋" />
+<meta property="og:title" content="爷爷奶奶的旧屋 · 3D 解谜小游戏" />
+<meta property="og:description" content="温馨向 3D 解谜小游戏：藏在旧家具里的礼物与心意，打开浏览器就能玩。" />
+<meta property="og:image" content="https://easondai.github.io/lockergame/assets/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="爷爷奶奶的旧屋：红瓦小屋和探头的橘猫团子" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="zh_CN" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="爷爷奶奶的旧屋 · 3D 解谜小游戏" />
+<meta name="twitter:description" content="温馨向 3D 解谜小游戏：藏在旧家具里的礼物与心意，打开浏览器就能玩。" />
+<meta name="twitter:image" content="https://easondai.github.io/lockergame/assets/og-image.png" />
 <style>
   :root {
     --ink: #3d3030;
@@ -238,6 +262,7 @@
   .score { text-align: center; margin: 10px 0 2px; }
   .score b { font-size: 46px; line-height: 1; color: #e0a21b; -webkit-text-stroke: 1.5px var(--ink); }
   .score small { display: block; font-size: 12px; opacity: .7; margin-top: 4px; }
+  .cardimg { width: 100%; max-width: 300px; display: block; margin: 8px auto; border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); border: 2.5px solid var(--ink); }
   #btnHint { position: relative; }
   #btnHint .hn { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: #fff;
     border: 2px solid var(--ink); font-size: 11px; font-weight: 800; line-height: 14px; text-align: center; }
@@ -251,7 +276,7 @@
   @media (max-width: 640px) {
     .title { left: 14px; top: calc(12px + env(safe-area-inset-top)); }
     .title h1 { font-size: 21px; letter-spacing: 2px; }
-    .title h1 span { font-size: 13px; padding: 0 7px; }
+    .title h1 span { display: none; }
     .title p { display: none; }
     .hud { left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); gap: 8px; }
     .hudrow { display: contents; }
@@ -331,7 +356,7 @@
   <div class="cloud"></div>
 
   <header class="ui title">
-    <h1>奶奶的柜子<span>解谜</span></h1>
+    <h1>爷爷奶奶的旧屋<span>第一章 · 柜子</span></h1>
     <p>拖动旋转 · 滚轮缩放 · 点击调查 · 选中道具再点目标来使用</p>
   </header>
   <div class="ui hud">
@@ -341,7 +366,7 @@
       <div class="pill timer">⏱ <span id="time">00:00</span></div>
     </div>
     <div class="toolbar">
-      <button class="btn" id="btnHint">💡<span class="t"> 提示</span><span class="hn" id="hintLeft">5</span></button>
+      <button class="btn" id="btnHint">💡<span class="t"> 提示</span><span class="hn" id="hintLeft">3</span></button>
       <button class="btn" id="btnHelp">❓<span class="t"> 指引</span></button>
       <button class="btn" id="btnView">🎯<span class="t"> 视角</span></button>
       <button class="btn" id="btnMusic">🎵<span class="t"> 音乐</span></button>
@@ -1972,20 +1997,21 @@ function updateHud() {
 }
 const fmtTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 /* ---------- 提示次数 / 评分 ---------- */
-const HINT_MAX = 5;                         // 每章最多 5 次提示
+const HINT_MAX = 3;                         // 每章最多 3 次提示
 const PAR = { 1: 10 * 60, 2: 15 * 60 };     // 满分用时：第一章 10 分钟，第二章 15 分钟
-function calcScore(time, hints, par) {
+function calcScore(time, hints, par, shards) {
   const overMin = Math.max(0, Math.ceil((time - par) / 60));
   const timeCut = Math.min(50, overMin * 2); // 超时每分钟扣 2 分，最多扣 50
-  const hintCut = hints * 5;                 // 每用一次提示扣 5 分
-  const score = Math.max(0, 100 - timeCut - hintCut);
+  const hintCut = Math.min(hints, HINT_MAX) * 5; // 每用一次提示扣 5 分（旧存档可能超过上限）
+  const shardCut = (3 - shards) * 5;         // 每少一块拼图扣 5 分
+  const score = Math.max(0, 100 - timeCut - hintCut - shardCut);
   const label = score === 100 ? '完美通关！' : score >= 90 ? '太厉害了' : score >= 75 ? '很棒' : score >= 60 ? '不错哦' : '顺利通关';
-  return { score, timeCut, hintCut, label };
+  return { score, timeCut, hintCut, shardCut, label };
 }
-function scoreHTML(time, hints, par) {
-  const r = calcScore(time, hints, par);
-  const cuts = [r.timeCut && `超时扣 ${r.timeCut}`, r.hintCut && `提示扣 ${r.hintCut}`].filter(Boolean).join(' · ');
-  return `<div class="score"><b>${r.score}</b> 分 · ${r.label}<small>${cuts || `${Math.round(par / 60)} 分钟内完成，且没有用提示`}</small></div>`;
+function scoreHTML(time, hints, par, shards) {
+  const r = calcScore(time, hints, par, shards);
+  const cuts = [r.timeCut && `超时扣 ${r.timeCut}`, r.hintCut && `提示扣 ${r.hintCut}`, r.shardCut && `少 ${3 - shards} 块拼图扣 ${r.shardCut}`].filter(Boolean).join(' · ');
+  return `<div class="score"><b>${r.score}</b> 分 · ${r.label}<small>${cuts || `${Math.round(par / 60)} 分钟内完成、没用提示、集齐拼图`}</small></div>`;
 }
 setInterval(() => {
   if (document.hidden) return;
@@ -2408,6 +2434,127 @@ function openBoxModal() {
   }));
 }
 
+/* ---------- 结局分享卡 ---------- */
+// 把结局画到一张 720×1080 的竖版卡片上，可保存 / 分享
+const CARD_FONT = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif';
+function svgImage(svg) {
+  return new Promise((res, rej) => {
+    const src = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" ').replace(/class="photo"( style="[^"]*")?/, '');
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
+  });
+}
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function wrapText(ctx, text, x, y, maxW, lh) {
+  let line = '';
+  for (const ch of text) {
+    // 标点不放在行首：遇到时把上一行最后一个字带下来
+    if (ctx.measureText(line + ch).width > maxW && line) {
+      let carry = '';
+      if ('，。！？、；：」』）…'.includes(ch) && line.length > 1) { carry = line.slice(-1); line = line.slice(0, -1); }
+      ctx.fillText(line, x, y); line = carry + ch; y += lh;
+    }
+    else line += ch;
+  }
+  if (line) ctx.fillText(line, x, y);
+  return y + lh;
+}
+async function drawShareCard(o) {
+  const W = 720, H = 1080, k = 2;
+  const cv = document.createElement('canvas');
+  cv.width = W * k; cv.height = H * k;
+  const ctx = cv.getContext('2d');
+  ctx.scale(k, k);
+  const ink = '#3d3030';
+  // 背景 + 描边卡片
+  ctx.fillStyle = o.bg; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  for (let i = 0; i < 40; i++) { ctx.beginPath(); ctx.arc((i * 137) % W, (i * 251) % H, 3 + (i % 4), 0, 7); ctx.fill(); }
+  rrect(ctx, 30, 30, W - 60, H - 60, 28);
+  ctx.fillStyle = '#fffaf1'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = ink; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.fillStyle = ink;
+  ctx.font = `600 24px ${CARD_FONT}`; ctx.globalAlpha = .6;
+  ctx.fillText(o.chapter, W / 2, 92);
+  ctx.globalAlpha = 1;
+  ctx.font = `800 40px ${CARD_FONT}`;
+  ctx.fillText(o.title, W / 2, 148);
+  // 照片 / 图标
+  if (o.svg) {
+    const img = await svgImage(o.svg);
+    ctx.save();
+    ctx.translate(W / 2, 390); ctx.rotate(-0.035);
+    if (o.sepia) ctx.filter = 'sepia(.35)';
+    ctx.drawImage(img, -270, -189, 540, 378);
+    ctx.restore();
+  } else {
+    ctx.font = `160px ${CARD_FONT}`;
+    ctx.fillText(o.icon, W / 2, 420);
+  }
+  // 一句话
+  ctx.font = `500 26px ${CARD_FONT}`;
+  let y = wrapText(ctx, o.quote, W / 2, 640, W - 160, 40);
+  // 分数
+  y = Math.max(y + 10, 720);
+  if (o.score != null) {
+    ctx.font = `900 110px ${CARD_FONT}`;
+    const sx = W / 2 - 20, sw = ctx.measureText(String(o.score)).width;
+    ctx.lineWidth = 8; ctx.strokeStyle = ink; ctx.lineJoin = 'round';
+    ctx.strokeText(o.score, sx, y + 90);
+    ctx.fillStyle = '#e0a21b'; ctx.fillText(o.score, sx, y + 90);
+    ctx.fillStyle = ink; ctx.font = `800 30px ${CARD_FONT}`; ctx.textAlign = 'left';
+    ctx.fillText('分', sx + sw / 2 + 8, y + 88);
+    ctx.textAlign = 'center'; ctx.font = `700 28px ${CARD_FONT}`;
+    ctx.fillText(o.label, W / 2, y + 140);
+  } else {
+    ctx.font = `800 44px ${CARD_FONT}`;
+    ctx.fillText(o.label, W / 2, y + 80);
+  }
+  // 数据格子
+  const cells = o.stats, cw = 168, gap = 18, x0 = W / 2 - (cells.length * cw + (cells.length - 1) * gap) / 2, cy = 900;
+  cells.forEach(([t, v], i) => {
+    const x = x0 + i * (cw + gap);
+    rrect(ctx, x, cy, cw, 78, 16);
+    ctx.fillStyle = '#f6eddd'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = ink; ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = `500 20px ${CARD_FONT}`; ctx.globalAlpha = .7;
+    ctx.fillText(t, x + cw / 2, cy + 30);
+    ctx.globalAlpha = 1; ctx.font = `800 26px ${CARD_FONT}`;
+    ctx.fillText(v, x + cw / 2, cy + 64);
+  });
+  // 页脚
+  const d = new Date();
+  ctx.font = `500 18px ${CARD_FONT}`; ctx.globalAlpha = .5;
+  ctx.fillText(`🏠 爷爷奶奶的旧屋　${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, W / 2, H - 56);
+  ctx.globalAlpha = 1;
+  return cv;
+}
+async function openShareCard(o, back) {
+  const s = openModal(`<h2>📸 结局分享卡</h2><p class="sub">正在冲洗照片……</p>`);
+  let cv;
+  try { cv = await drawShareCard(o); } catch (e) { s.querySelector('.sub').textContent = '卡片生成失败了，再试一次吧。'; console.error(e); return; }
+  if (sheet !== s || !modal.classList.contains('show')) return;
+  const url = cv.toDataURL('image/png');
+  const name = `${o.chapter.split(' · ')[0]}-结局卡.png`;
+  openModal(`<h2>📸 结局分享卡</h2>
+    <img class="cardimg" src="${url}" alt="结局分享卡">
+    <p class="sub">手机上也可以长按图片保存</p>
+    <div class="row"><button class="btn" id="cBack">← 返回</button><a class="btn primary" id="cSave" href="${url}" download="${name}" style="text-decoration:none">💾 保存图片</a>${navigator.share ? '<button class="btn" id="cShare">📤 分享</button>' : ''}</div>`);
+  sheet.querySelector('#cBack').onclick = back;
+  sheet.querySelector('#cSave').onclick = () => sfx.click();
+  sheet.querySelector('#cShare')?.addEventListener('click', () => cv.toBlob(async b => {
+    const file = new File([b], name, { type: 'image/png' });
+    try {
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: o.title });
+      else await navigator.share({ title: o.title, text: `我在「${o.chapter}」拿到了${o.score != null ? ' ' + o.score + ' 分' : '隐藏结局'}！` });
+    } catch (e) { /* 用户取消 */ }
+  }));
+}
+
 /* ---------- 结局 ---------- */
 function photoSVG(full) {
   const tear = (x, y, w, h) => `<path d="M${x} ${y} l${w * 0.3} ${h * 0.12} l${w * 0.25} -${h * 0.1} l${w * 0.45} ${h * 0.15} l-${w * 0.08} ${h * 0.4} l${w * 0.1} ${h * 0.43} l-${w * 0.4} -${h * 0.08} l-${w * 0.3} ${h * 0.1} l-${w * 0.3} -${h * 0.12} l${w * 0.07} -${h * 0.45}z" fill="#efe6d8" stroke="#3d3030" stroke-width="2.5" stroke-dasharray="5 4"/>`;
@@ -2471,13 +2618,23 @@ function showEnding() {
       <div>使用提示<b>${S.hints}/${HINT_MAX} 次</b></div>
       <div>碎片<b>🧩 ${nShard}/3</b></div>
     </div>
-    ${scoreHTML(S.time, S.hints, PAR[1])}
-    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">再玩一次</button></div>
+    ${scoreHTML(S.time, S.hints, PAR[1], nShard)}
+    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">再玩一次</button><button class="btn" id="share">📸 分享卡</button></div>
     <div class="row"><button class="btn primary" id="next">✨ 第二章：爷爷的书桌 →</button></div>
   `);
   s.querySelector('#stay').onclick = closeModal;
   s.querySelector('#again').onclick = restart;
   s.querySelector('#next').onclick = enterCh2;
+  s.querySelector('#share').onclick = () => {
+    const r = calcScore(S.time, S.hints, PAR[1], nShard);
+    openShareCard({
+      chapter: '第一章 · 奶奶的柜子', title: full ? '🌈 真结局 · 完整的照片' : '🎁 找到了奶奶的礼物',
+      svg: photoSVG(full), bg: '#f4d6a8',
+      quote: full ? '「其实我没有去旅行——我就在门外，等你转过身来。」' : '「柜子和团子都交给你啦，要好好照顾它们哦。」',
+      score: r.score, label: r.label,
+      stats: [['用时', fmtTime(S.time)], ['提示', `${S.hints}/${HINT_MAX}`], ['碎片', `🧩 ${nShard}/3`]],
+    }, showEnding);
+  };
   updateHud();
 }
 /* ---------- 隐藏结局：抽屉密码 2020 ---------- */
@@ -2507,12 +2664,17 @@ function showSecretEnding() {
       <div>结局<b>🔓 隐藏</b></div>
     </div>
     <p class="sub">隐藏结局不参与评分。</p>
-    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">从头好好玩一次</button></div>
+    <div class="row"><button class="btn" id="stay">再看看柜子</button><button class="btn" id="again">从头好好玩一次</button><button class="btn" id="share">📸 分享卡</button></div>
     <div class="row"><button class="btn primary" id="next">✨ 第二章：爷爷的书桌 →</button></div>
   `);
   s.querySelector('#stay').onclick = closeModal;
   s.querySelector('#again').onclick = restart;
   s.querySelector('#next').onclick = enterCh2;
+  s.querySelector('#share').onclick = () => openShareCard({
+    chapter: '第一章 · 奶奶的柜子', title: '🔓 隐藏结局 · 万能钥匙', icon: '🔓', bg: '#cfe3d4',
+    quote: '「2020 是奶奶的万能密码——被你发现啦！」', score: null, label: '发现了隐藏结局',
+    stats: [['用时', fmtTime(S.time)], ['提示', `${S.hints}/${HINT_MAX}`], ['结局', '隐藏']],
+  }, showSecretEnding);
   updateHud();
 }
 function restart() {
@@ -3771,9 +3933,20 @@ function showEnding2() {
       <span style="opacity:.75">……你抬头看窗外，树下好像真的多了两把椅子。</span></div>`
       : `<p class="sub">${n ? '照片还缺了几块……' : ''}书桌周围好像还藏着几片照片碎片。（🧩 ${n}/3）</p>`}
     <div class="stats"><div>用时<b>${fmtTime(S.time2)}</b></div><div>使用提示<b>${S.hints2}/${HINT_MAX} 次</b></div><div>碎片<b>🧩 ${n}/3</b></div></div>
-    ${scoreHTML(S.time2, S.hints2, PAR[2])}
-    <div class="row"><button class="btn" id="stay">留在书房</button><button class="btn" id="back1">回到奶奶的柜子</button><button class="btn primary" id="again">重玩第二章</button></div>`);
+    ${scoreHTML(S.time2, S.hints2, PAR[2], n)}
+    <div class="row"><button class="btn" id="stay">留在书房</button><button class="btn" id="back1">回到奶奶的柜子</button><button class="btn primary" id="again">重玩第二章</button></div>
+    <div class="row"><button class="btn" id="share">📸 生成分享卡</button></div>`);
   s.querySelector('#stay').onclick = closeModal;
+  s.querySelector('#share').onclick = () => {
+    const r = calcScore(S.time2, S.hints2, PAR[2], n);
+    openShareCard({
+      chapter: '第二章 · 爷爷的书桌', title: full ? '🌙 真结局 · 树下的两个人' : '🌙 他们一直都在',
+      svg: photo2SVG(), sepia: true, bg: '#2f3b5c',
+      quote: full ? '「等你长大，再来听我们讲故事。」' : '「老槐树下，两个身影并肩坐着。他们一直都在。」',
+      score: r.score, label: r.label,
+      stats: [['用时', fmtTime(S.time2)], ['提示', `${S.hints2}/${HINT_MAX}`], ['碎片', `🧩 ${n}/3`]],
+    }, showEnding2);
+  };
   s.querySelector('#back1').onclick = () => { S.ch2 = false; save(); location.reload(); };
   s.querySelector('#again').onclick = resetCh2;
   updateHud();
@@ -3803,9 +3976,8 @@ function setChapter(two) {
     ? { minDistance: 2.6, maxDistance: 10, minAzimuthAngle: -1.2, maxAzimuthAngle: 1.2 }
     : { minDistance: 4.5, maxDistance: 17, minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity });
   controls.update();
-  document.title = two ? '爷爷的书桌 · 3D 解谜小游戏' : '奶奶的柜子 · 3D 解谜小游戏';
-  $('.title h1').firstChild.textContent = two ? '爷爷的书桌' : '奶奶的柜子';
-  $('.title h1 span').textContent = two ? '第二章' : '解谜';
+  document.title = `爷爷奶奶的旧屋 · ${two ? '爷爷的书桌' : '奶奶的柜子'}`;
+  $('.title h1 span').textContent = two ? '第二章 · 书桌' : '第一章 · 柜子';
   buildProgress();
   updateHud(); updateInv();
 }
